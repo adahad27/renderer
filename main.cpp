@@ -91,21 +91,34 @@ void triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int
         }
     }
     int y_top, y_bot;
+    int y_line = left_point.second + ((right_point.second - left_point.second) / (right_point.first - left_point.first)) * (middle_point.first - left_point.first);
     for(int x=0; x<middle_point.first - x_left; ++x) {
         
         /* Now we must calculate the correct values of y_bot, y_top for each x-value */
         y_top = left_point.second + x*(middle_point.second - left_point.second)/float(middle_point.first - left_point.first);
         y_bot = left_point.second + x*(right_point.second - left_point.second)/float(right_point.first - left_point.first);
+
+        if(middle_point.second < y_line) { 
+            std::swap(y_top, y_bot);
+        }        
+        
         for(int y=y_bot; y<y_top; ++y) {
             image.set(x + x_left, y, color);
         }
     }
+    if(middle_point.second < y_line) { 
+            std::swap(y_top, y_bot);
+    } 
+    int y_top_offset = y_top;
     int y_bot_offset = y_bot;
     for(int x=0; x<x_right - middle_point.first; ++x) {
         
         /* Now we must calculate the correct values of y_bot, y_top for each x-value */
-        y_top = middle_point.second + x*(right_point.second - middle_point.second)/float(right_point.first - middle_point.first);
+        y_top = y_top_offset + x*(right_point.second - middle_point.second)/float(right_point.first - middle_point.first);
         y_bot = y_bot_offset + x*(right_point.second - left_point.second)/float(right_point.first - left_point.first);
+        if(middle_point.second < y_line) { 
+            std::swap(y_top, y_bot);
+        } 
         for(int y=y_bot; y<y_top; ++y) {
             image.set(x + middle_point.first, y, color);
         }
@@ -116,12 +129,11 @@ void triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int
 int main(int argc, char** argv) {
 	TGAImage image(200, 200, TGAImage::RGB);
 
-	triangle(std::make_pair(10,70), std::make_pair(50, 160), std::make_pair(70, 80), image, red);
-    hollow_triangle(std::make_pair(10,70), std::make_pair(50, 160), std::make_pair(70, 80), image, white);
+	// triangle(std::make_pair(10,70), std::make_pair(50, 160), std::make_pair(70, 80), image, red);
 
-    triangle(std::make_pair(180, 50), std::make_pair(150, 1), std::make_pair(70, 180), image, green);
+    // triangle(std::make_pair(180, 50), std::make_pair(150, 1), std::make_pair(70, 180), image, green);
 
-    // triangle(std::make_pair(10,70), std::make_pair(50, 160), std::make_pair(70, 80), image, red);
+    triangle(std::make_pair(180, 150), std::make_pair(120, 160), std::make_pair(130, 180), image, red);
 
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
 	image.write_tga_file("output.tga");
