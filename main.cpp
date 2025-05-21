@@ -3,10 +3,19 @@
 #include "model.h"
 #include "geometry.h"
 #include <iostream>
+
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
 const TGAColor green = TGAColor(0, 255,   0,   255);
 const TGAColor blue  = TGAColor(0, 0,   255,   255);
+
+struct pixel
+{
+    int x;
+    int y;
+};
+
+
 
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) { 
     bool steep = false; 
@@ -126,14 +135,63 @@ void triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int
 }
 
 
+float calculate_triangle_area(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p3) {
+    return abs(p1.first*(p2.second-p3.second) + p2.first*(p3.second - p1.second) + p3.first*(p1.second - p2.second));
+}
+
+void modern_triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p3, TGAImage &image, TGAColor color) {
+    /*
+    First we draw the bounding box for the triangle
+    */
+    std::pair<int, int> points[3] = {p1, p2, p3};
+    
+    int bottom_limit, top_limit, right_limit, left_limit;
+
+    bottom_limit = INT32_MAX;
+    top_limit = 0;
+    right_limit = 0;
+    left_limit = INT32_MAX;
+
+    for(int i = 0; i < 3; ++i) {
+        if(points[i].second < bottom_limit) {
+            bottom_limit = points[i].second;
+        }
+        if(points[i].first < left_limit) {
+            left_limit = points[i].first;
+        }
+        if(points[i].second > top_limit) {
+            top_limit = points[i].second;
+        }
+        if(points[i].first > right_limit) {
+            right_limit = points[i].second;
+        }
+    }
+
+/* 
+TODO: need to work on getting OpenMP pragmas to work properly
+so the following for loop can be parallelized.
+#pragma omp parallel for
+
+*/
+
+    for(int x = left_limit; x <= right_limit; ++x) {
+        for(int y = bottom_limit; y <= top_limit; ++y) {
+            image.set(x, y, color);
+        }
+    }
+    
+
+}
+
 int main(int argc, char** argv) {
 	TGAImage image(200, 200, TGAImage::RGB);
 
 	// triangle(std::make_pair(10,70), std::make_pair(50, 160), std::make_pair(70, 80), image, red);
 
-    // triangle(std::make_pair(180, 50), std::make_pair(150, 1), std::make_pair(70, 180), image, green);
+    modern_triangle(std::make_pair(180, 50), std::make_pair(150, 1), std::make_pair(70, 180), image, white);
+    triangle(std::make_pair(180, 50), std::make_pair(150, 1), std::make_pair(70, 180), image, green);
 
-    triangle(std::make_pair(180, 150), std::make_pair(120, 160), std::make_pair(130, 180), image, red);
+    // triangle(std::make_pair(180, 150), std::make_pair(120, 160), std::make_pair(130, 180), image, red);
 
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
 	image.write_tga_file("output.tga");
