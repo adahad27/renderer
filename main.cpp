@@ -92,7 +92,7 @@ void triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int
     }
     int y_top, y_bot;
     int y_line = left_point.second + ((right_point.second - left_point.second) / (right_point.first - left_point.first)) * (middle_point.first - left_point.first);
-    for(int x=0; x<middle_point.first - x_left; ++x) {
+    for(int x=0; x<=middle_point.first - x_left; ++x) {
         
         /* Now we must calculate the correct values of y_bot, y_top for each x-value */
         y_top = left_point.second + x*(middle_point.second - left_point.second)/float(middle_point.first - left_point.first);
@@ -111,7 +111,7 @@ void triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int
     } 
     int y_top_offset = y_top;
     int y_bot_offset = y_bot;
-    for(int x=0; x<x_right - middle_point.first; ++x) {
+    for(int x=0; x<=x_right - middle_point.first; ++x) {
         
         /* Now we must calculate the correct values of y_bot, y_top for each x-value */
         y_top = y_top_offset + x*(right_point.second - middle_point.second)/float(right_point.first - middle_point.first);
