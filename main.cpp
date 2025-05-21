@@ -17,6 +17,12 @@ struct pixel
 
 
 
+bool operator==(pixel p1, pixel p2) {
+    return p1.x == p2.x && p1.y == p2.y;
+}
+bool operator!=(pixel p1, pixel p2) {
+    return !(p1.x == p2.x && p1.y == p2.y);
+}
 void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) { 
     bool steep = false; 
     if (std::abs(x0-x1)<std::abs(y0-y1)) { 
@@ -41,23 +47,23 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
         } 
         error2 += derror2; 
         if (error2 > dx) { 
-            y += (y1>y0?1:-1); 
+            y += (y1>y0?1:-1);
             error2 -= dx*2; 
         } 
     } 
 }
-void hollow_triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p3, TGAImage &image, TGAColor color) {
+void hollow_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
     /* We must confirm that the points for the triangle are distinct points. */
     assert(p1 != p2);
     assert(p2 != p3);
     assert(p1 != p3);
 
     /* This will draw the sides of the triangle. */
-    line(p1.first, p1.second, p2.first, p2.second, image, color);
-    line(p2.first, p2.second, p3.first, p3.second, image, color);
-    line(p3.first, p3.second, p1.first, p1.second, image, color);
+    line(p1.x, p1.y, p2.x, p2.y, image, color);
+    line(p2.x, p2.y, p3.x, p3.y, image, color);
+    line(p3.x, p3.y, p1.x, p1.y, image, color);
 }
-void triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p3, TGAImage &image, TGAColor color) {
+void triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
     
     /* We must confirm that the points for the triangle are distinct points. */
     assert(p1 != p2);
@@ -65,30 +71,30 @@ void triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int
     assert(p1 != p3);
 
     /* This will draw the sides of the triangle. */
-    line(p1.first, p1.second, p2.first, p2.second, image, color);
-    line(p2.first, p2.second, p3.first, p3.second, image, color);
-    line(p3.first, p3.second, p1.first, p1.second, image, color);
+    line(p1.x, p1.y, p2.x, p2.y, image, color);
+    line(p2.x, p2.y, p3.x, p3.y, image, color);
+    line(p3.x, p3.y, p1.x, p1.y, image, color);
 
     /* 
     Now we must fill in the triangle, which we can do by sweeping a line over the triangle.
     So to fill in the triangle, let us try using a vertical line that sweeps from left to right. 
     */
 
-    std::pair<int, int> points[3] = {p1, p2, p3};
+    pixel points[3] = {p1, p2, p3};
 
     int x_left = INT32_MAX;
     int x_right = 0;
 
-    std::pair<int, int> left_point, right_point, middle_point;
+    pixel left_point, right_point, middle_point;
 
     for(uint32_t i = 0; i < 3; ++i) {
         
-        if(points[i].first < x_left) {
-            x_left = points[i].first;
+        if(points[i].x < x_left) {
+            x_left = points[i].x;
             left_point = points[i];
         }
-        if(points[i].first > x_right) {
-            x_right = points[i].first;
+        if(points[i].x > x_right) {
+            x_right = points[i].x;
             right_point = points[i];
         }
     }
@@ -100,14 +106,14 @@ void triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int
         }
     }
     int y_top, y_bot;
-    int y_line = left_point.second + ((right_point.second - left_point.second) / (right_point.first - left_point.first)) * (middle_point.first - left_point.first);
-    for(int x=0; x<=middle_point.first - x_left; ++x) {
+    int y_line = left_point.y + ((right_point.y - left_point.y) / (right_point.x - left_point.x)) * (middle_point.x - left_point.x);
+    for(int x=0; x<=middle_point.x - x_left; ++x) {
         
         /* Now we must calculate the correct values of y_bot, y_top for each x-value */
-        y_top = left_point.second + x*(middle_point.second - left_point.second)/float(middle_point.first - left_point.first);
-        y_bot = left_point.second + x*(right_point.second - left_point.second)/float(right_point.first - left_point.first);
+        y_top = left_point.y + x*(middle_point.y - left_point.y)/float(middle_point.x - left_point.x);
+        y_bot = left_point.y + x*(right_point.y - left_point.y)/float(right_point.x - left_point.x);
 
-        if(middle_point.second < y_line) { 
+        if(middle_point.y < y_line) { 
             std::swap(y_top, y_bot);
         }        
         
@@ -115,35 +121,35 @@ void triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int
             image.set(x + x_left, y, color);
         }
     }
-    if(middle_point.second < y_line) { 
+    if(middle_point.y < y_line) { 
             std::swap(y_top, y_bot);
     } 
     int y_top_offset = y_top;
     int y_bot_offset = y_bot;
-    for(int x=0; x<=x_right - middle_point.first; ++x) {
+    for(int x=0; x<=x_right - middle_point.x; ++x) {
         
         /* Now we must calculate the correct values of y_bot, y_top for each x-value */
-        y_top = y_top_offset + x*(right_point.second - middle_point.second)/float(right_point.first - middle_point.first);
-        y_bot = y_bot_offset + x*(right_point.second - left_point.second)/float(right_point.first - left_point.first);
-        if(middle_point.second < y_line) { 
+        y_top = y_top_offset + x*(right_point.y - middle_point.y)/float(right_point.x - middle_point.x);
+        y_bot = y_bot_offset + x*(right_point.y - left_point.y)/float(right_point.x - left_point.x);
+        if(middle_point.y < y_line) { 
             std::swap(y_top, y_bot);
         } 
         for(int y=y_bot; y<y_top; ++y) {
-            image.set(x + middle_point.first, y, color);
+            image.set(x + middle_point.x, y, color);
         }
     }
 }
 
 
-float calculate_triangle_area(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p3) {
-    return abs(p1.first*(p2.second-p3.second) + p2.first*(p3.second - p1.second) + p3.first*(p1.second - p2.second));
+float calculate_triangle_area(pixel p1, pixel p2, pixel p3) {
+    return abs(p1.x*(p2.y-p3.y) + p2.x*(p3.y - p1.y) + p3.x*(p1.y - p2.y));
 }
 
-void modern_triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<int, int> p3, TGAImage &image, TGAColor color) {
+void modern_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
     /*
     First we draw the bounding box for the triangle
     */
-    std::pair<int, int> points[3] = {p1, p2, p3};
+    pixel points[3] = {p1, p2, p3};
     
     int bottom_limit, top_limit, right_limit, left_limit;
 
@@ -153,17 +159,17 @@ void modern_triangle(std::pair<int, int> p1, std::pair<int, int> p2, std::pair<i
     left_limit = INT32_MAX;
 
     for(int i = 0; i < 3; ++i) {
-        if(points[i].second < bottom_limit) {
-            bottom_limit = points[i].second;
+        if(points[i].y < bottom_limit) {
+            bottom_limit = points[i].y;
         }
-        if(points[i].first < left_limit) {
-            left_limit = points[i].first;
+        if(points[i].x < left_limit) {
+            left_limit = points[i].x;
         }
-        if(points[i].second > top_limit) {
-            top_limit = points[i].second;
+        if(points[i].y > top_limit) {
+            top_limit = points[i].y;
         }
-        if(points[i].first > right_limit) {
-            right_limit = points[i].second;
+        if(points[i].x > right_limit) {
+            right_limit = points[i].x;
         }
     }
 
@@ -187,9 +193,13 @@ int main(int argc, char** argv) {
 	TGAImage image(200, 200, TGAImage::RGB);
 
 	// triangle(std::make_pair(10,70), std::make_pair(50, 160), std::make_pair(70, 80), image, red);
-
-    modern_triangle(std::make_pair(180, 50), std::make_pair(150, 1), std::make_pair(70, 180), image, white);
-    triangle(std::make_pair(180, 50), std::make_pair(150, 1), std::make_pair(70, 180), image, green);
+    
+    pixel p1 = {180, 50};
+    pixel p2 = {150, 1};
+    pixel p3 = {70, 180};
+    
+    modern_triangle(p1, p2, p3, image, white);
+    // triangle(pixel(180, 50), pixel(150, 1), pixel(70, 180), image, green);
 
     // triangle(std::make_pair(180, 150), std::make_pair(120, 160), std::make_pair(130, 180), image, red);
 
