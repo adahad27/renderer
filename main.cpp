@@ -3,7 +3,7 @@
 #include "model.h"
 #include "geometry.h"
 #include <iostream>
-
+#include <cmath>
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
 const TGAColor green = TGAColor(0, 255,   0,   255);
@@ -141,8 +141,9 @@ void triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
 }
 
 
-float calculate_triangle_area(pixel p1, pixel p2, pixel p3) {
-    return abs(p1.x*(p2.y-p3.y) + p2.x*(p3.y - p1.y) + p3.x*(p1.y - p2.y));
+double calculate_triangle_area(pixel p1, pixel p2, pixel p3) {
+    /* Here we use std::abs because we want the overload for doubles */
+    return std::abs(double(p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y) +p3.x*(p1.y-p2.y))/ 2.0);
 }
 
 void modern_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
@@ -179,13 +180,23 @@ so the following for loop can be parallelized.
 #pragma omp parallel for
 
 */
-
+    double total_area = calculate_triangle_area(p1, p2, p3);
+    double area_1, area_2, area_3;
+    pixel current_pixel;
     for(int x = left_limit; x <= right_limit; ++x) {
         for(int y = bottom_limit; y <= top_limit; ++y) {
-            image.set(x, y, color);
+            current_pixel = {x, y};
+
+            area_1 = calculate_triangle_area(current_pixel, p1, p2);
+            area_2 = calculate_triangle_area(current_pixel, p2, p3);
+            area_3 = calculate_triangle_area(current_pixel, p1, p3);
+            
+            if(total_area == area_1 + area_2 + area_3) {
+                image.set(x, y, color);
+            }
+            
         }
     }
-    
 
 }
 
@@ -197,9 +208,10 @@ int main(int argc, char** argv) {
     pixel p1 = {180, 50};
     pixel p2 = {150, 1};
     pixel p3 = {70, 180};
-    
+
+    // triangle(p1, p2, p3, image, green);
     modern_triangle(p1, p2, p3, image, white);
-    // triangle(pixel(180, 50), pixel(150, 1), pixel(70, 180), image, green);
+    
 
     // triangle(std::make_pair(180, 150), std::make_pair(120, 160), std::make_pair(130, 180), image, red);
 
