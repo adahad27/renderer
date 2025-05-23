@@ -143,7 +143,9 @@ void triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
 
 double calculate_triangle_area(pixel p1, pixel p2, pixel p3) {
     /* Here we use std::abs because we want the overload for doubles */
-    return std::abs(double(p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y) +p3.x*(p1.y-p2.y))/ 2.0);
+    // return std::abs(double(p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y) +p3.x*(p1.y-p2.y))/ 2.0);
+
+    return 0.5*((p2.y-p1.y)*(p2.x+p1.x) + (p3.y-p2.y)*(p3.x+p2.x) + (p1.y-p3.y)*(p1.x+p3.x));
 }
 
 void modern_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
@@ -187,11 +189,11 @@ so the following for loop can be parallelized.
         for(int y = bottom_limit; y <= top_limit; ++y) {
             current_pixel = {x, y};
 
-            area_1 = calculate_triangle_area(current_pixel, p1, p2);
-            area_2 = calculate_triangle_area(current_pixel, p2, p3);
-            area_3 = calculate_triangle_area(current_pixel, p1, p3);
+            area_1 = calculate_triangle_area(current_pixel, p1, p2) / total_area;
+            area_2 = calculate_triangle_area(current_pixel, p2, p3) / total_area;
+            area_3 = calculate_triangle_area(current_pixel, p3, p1) / total_area;
             
-            if(total_area == area_1 + area_2 + area_3) {
+            if(!(area_1 < 0 || area_2 < 0 || area_3 <0)) {
                 image.set(x, y, color);
             }
             
