@@ -23,23 +23,23 @@ bool operator==(pixel p1, pixel p2) {
 bool operator!=(pixel p1, pixel p2) {
     return !(p1.x == p2.x && p1.y == p2.y);
 }
-void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) { 
+void line(pixel p1, pixel p2, TGAImage &image, TGAColor color) { 
     bool steep = false; 
-    if (std::abs(x0-x1)<std::abs(y0-y1)) { 
-        std::swap(x0, y0); 
-        std::swap(x1, y1); 
+    if (std::abs(p1.x-p2.x)<std::abs(p1.y-p2.y)) { 
+        std::swap(p1.x, p1.y); 
+        std::swap(p2.x, p2.y); 
         steep = true; 
     } 
-    if (x0>x1) { 
-        std::swap(x0, x1); 
-        std::swap(y0, y1); 
+    if (p1.x>p2.x) { 
+        std::swap(p1.x, p2.x); 
+        std::swap(p1.y, p2.y); 
     } 
-    int dx = x1-x0; 
-    int dy = y1-y0; 
+    int dx = p2.x-p1.x; 
+    int dy = p2.y-p1.y; 
     int derror2 = std::abs(dy)*2; 
     int error2 = 0; 
-    int y = y0; 
-    for (int x=x0; x<=x1; x++) { 
+    int y = p1.y; 
+    for (int x=p1.x; x<=p2.x; x++) { 
         if (steep) { 
             image.set(y, x, color); 
         } else { 
@@ -47,7 +47,7 @@ void line(int x0, int y0, int x1, int y1, TGAImage &image, TGAColor color) {
         } 
         error2 += derror2; 
         if (error2 > dx) { 
-            y += (y1>y0?1:-1);
+            y += (p2.y>p1.y?1:-1);
             error2 -= dx*2; 
         } 
     } 
@@ -59,9 +59,9 @@ void hollow_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor col
     assert(p1 != p3);
 
     /* This will draw the sides of the triangle. */
-    line(p1.x, p1.y, p2.x, p2.y, image, color);
-    line(p2.x, p2.y, p3.x, p3.y, image, color);
-    line(p3.x, p3.y, p1.x, p1.y, image, color);
+    line(p1, p2, image, color);
+    line(p2, p3, image, color);
+    line(p3, p1, image, color);
 }
 void triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
     
@@ -71,9 +71,9 @@ void triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
     assert(p1 != p3);
 
     /* This will draw the sides of the triangle. */
-    line(p1.x, p1.y, p2.x, p2.y, image, color);
-    line(p2.x, p2.y, p3.x, p3.y, image, color);
-    line(p3.x, p3.y, p1.x, p1.y, image, color);
+    line(p1, p2, image, color);
+    line(p2, p3, image, color);
+    line(p3, p1, image, color);
 
     /* 
     Now we must fill in the triangle, which we can do by sweeping a line over the triangle.
@@ -211,8 +211,10 @@ int main(int argc, char** argv) {
     pixel p2 = {150, 1};
     pixel p3 = {70, 180};
 
+    hollow_triangle(p1, p2, p3, image, red);
+
     // triangle(p1, p2, p3, image, green);
-    modern_triangle(p1, p2, p3, image, white);
+    // modern_triangle(p1, p2, p3, image, white);
     
 
     // triangle(std::make_pair(180, 150), std::make_pair(120, 160), std::make_pair(130, 180), image, red);
