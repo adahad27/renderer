@@ -23,6 +23,8 @@ bool operator==(pixel p1, pixel p2) {
 bool operator!=(pixel p1, pixel p2) {
     return !(p1.x == p2.x && p1.y == p2.y);
 }
+
+
 void line(pixel p1, pixel p2, TGAImage &image, TGAColor color) { 
     bool steep = false; 
     if (std::abs(p1.x-p2.x)<std::abs(p1.y-p2.y)) { 
@@ -52,6 +54,8 @@ void line(pixel p1, pixel p2, TGAImage &image, TGAColor color) {
         } 
     } 
 }
+
+
 void hollow_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
     /* We must confirm that the points for the triangle are distinct points. */
     assert(p1 != p2);
@@ -63,7 +67,9 @@ void hollow_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor col
     line(p2, p3, image, color);
     line(p3, p1, image, color);
 }
-void triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
+
+
+void traditional_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
     
     /* We must confirm that the points for the triangle are distinct points. */
     assert(p1 != p2);
@@ -148,7 +154,8 @@ double calculate_triangle_area(pixel p1, pixel p2, pixel p3) {
     return 0.5*((p2.y-p1.y)*(p2.x+p1.x) + (p3.y-p2.y)*(p3.x+p2.x) + (p1.y-p3.y)*(p1.x+p3.x));
 }
 
-void modern_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
+
+void triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
     /*
     First we draw the bounding box for the triangle
     */
@@ -202,22 +209,44 @@ so the following for loop can be parallelized.
 
 }
 
+
+void rasterize_line(pixel p1, pixel p2, TGAImage &image, TGAColor color, int depth_buffer[]) {
+    if (p1.x>p2.x) {
+        std::swap(p1, p2);
+    }
+    for (int x=p1.x; x<=p2.x; x++) {
+        float t = (x-p1.x)/(float)(p2.x-p1.x);
+        int y = p1.y*(1.-t) + p2.y*t;
+        if (depth_buffer[x]<y) {
+            depth_buffer[x] = y;
+            image.set(x, 0, color);
+        }
+    }
+}
+
+
+void rasterize(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color, int depth_buffer[]) {
+
+}
+
+
 int main(int argc, char** argv) {
-	TGAImage image(200, 200, TGAImage::RGB);
+    int width, height;
+    width = 800;
+    height = 800;
+	TGAImage image(width, height, TGAImage::RGB);
 
-	// triangle(std::make_pair(10,70), std::make_pair(50, 160), std::make_pair(70, 80), image, red);
-    
-    pixel p1 = {180, 50};
-    pixel p2 = {150, 1};
-    pixel p3 = {70, 180};
 
-    hollow_triangle(p1, p2, p3, image, red);
+    int zbuffer[width*height];
+    for(int x=0; x<width; ++x) {
+        for(int y = 0; y < height; ++y) {
+            zbuffer[x*width + y] = std::numeric_limits<int>::min();
+        }
+    }
 
-    // triangle(p1, p2, p3, image, green);
-    // modern_triangle(p1, p2, p3, image, white);
-    
+    rasterize({1, 1}, {1, 1}, {1, 1}, image, red, zbuffer);
 
-    // triangle(std::make_pair(180, 150), std::make_pair(120, 160), std::make_pair(130, 180), image, red);
+    line({10,10}, {790, 10}, image, white);
 
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
 	image.write_tga_file("output.tga");
