@@ -4,28 +4,39 @@
 #include "geometry.h"
 #include <iostream>
 #include <cmath>
+#include <string>
+#include <fstream>
+#include <vector>
+
+
+
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
 const TGAColor green = TGAColor(0, 255,   0,   255);
 const TGAColor blue  = TGAColor(0, 0,   255,   255);
 
-struct pixel
+struct vec2
 {
-    int x;
-    int y;
+    double x;
+    double y;
 };
 
+struct vec3
+{
+    double x;
+    double y;
+    double z;
+};
 
-
-bool operator==(pixel p1, pixel p2) {
+bool operator==(vec2 p1, vec2 p2) {
     return p1.x == p2.x && p1.y == p2.y;
 }
-bool operator!=(pixel p1, pixel p2) {
+bool operator!=(vec2 p1, vec2 p2) {
     return !(p1.x == p2.x && p1.y == p2.y);
 }
 
 
-void line(pixel p1, pixel p2, TGAImage &image, TGAColor color) { 
+void line(vec2 p1, vec2 p2, TGAImage &image, TGAColor color) { 
     bool steep = false; 
     if (std::abs(p1.x-p2.x)<std::abs(p1.y-p2.y)) { 
         std::swap(p1.x, p1.y); 
@@ -56,7 +67,7 @@ void line(pixel p1, pixel p2, TGAImage &image, TGAColor color) {
 }
 
 
-void hollow_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
+void hollow_triangle(vec2 p1, vec2 p2, vec2 p3, TGAImage &image, TGAColor color) {
     /* We must confirm that the points for the triangle are distinct points. */
     assert(p1 != p2);
     assert(p2 != p3);
@@ -69,7 +80,7 @@ void hollow_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor col
 }
 
 
-void traditional_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
+void traditional_triangle(vec2 p1, vec2 p2, vec2 p3, TGAImage &image, TGAColor color) {
     
     /* We must confirm that the points for the triangle are distinct points. */
     assert(p1 != p2);
@@ -86,12 +97,12 @@ void traditional_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColo
     So to fill in the triangle, let us try using a vertical line that sweeps from left to right. 
     */
 
-    pixel points[3] = {p1, p2, p3};
+    vec2 points[3] = {p1, p2, p3};
 
     int x_left = INT32_MAX;
     int x_right = 0;
 
-    pixel left_point, right_point, middle_point;
+    vec2 left_point, right_point, middle_point;
 
     for(uint32_t i = 0; i < 3; ++i) {
         
@@ -147,7 +158,7 @@ void traditional_triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColo
 }
 
 
-double calculate_triangle_area(pixel p1, pixel p2, pixel p3) {
+double calculate_triangle_area(vec2 p1, vec2 p2, vec2 p3) {
     /* Here we use std::abs because we want the overload for doubles */
     // return std::abs(double(p1.x*(p2.y-p3.y) + p2.x*(p3.y-p1.y) +p3.x*(p1.y-p2.y))/ 2.0);
 
@@ -155,11 +166,11 @@ double calculate_triangle_area(pixel p1, pixel p2, pixel p3) {
 }
 
 
-void triangle(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color) {
+void triangle(vec2 p1, vec2 p2, vec2 p3, TGAImage &image, TGAColor color) {
     /*
     First we draw the bounding box for the triangle
     */
-    pixel points[3] = {p1, p2, p3};
+    vec2 points[3] = {p1, p2, p3};
     
     int bottom_limit, top_limit, right_limit, left_limit;
 
@@ -191,14 +202,14 @@ so the following for loop can be parallelized.
 */
     double total_area = calculate_triangle_area(p1, p2, p3);
     double area_1, area_2, area_3;
-    pixel current_pixel;
+    vec2 current_vec2;
     for(int x = left_limit; x <= right_limit; ++x) {
         for(int y = bottom_limit; y <= top_limit; ++y) {
-            current_pixel = {x, y};
+            current_vec2 = {(double)x, (double)y};
 
-            area_1 = calculate_triangle_area(current_pixel, p1, p2) / total_area;
-            area_2 = calculate_triangle_area(current_pixel, p2, p3) / total_area;
-            area_3 = calculate_triangle_area(current_pixel, p3, p1) / total_area;
+            area_1 = calculate_triangle_area(current_vec2, p1, p2) / total_area;
+            area_2 = calculate_triangle_area(current_vec2, p2, p3) / total_area;
+            area_3 = calculate_triangle_area(current_vec2, p3, p1) / total_area;
             
             if(!(area_1 < 0 || area_2 < 0 || area_3 <0)) {
                 image.set(x, y, color);
@@ -210,7 +221,75 @@ so the following for loop can be parallelized.
 }
 
 
-void rasterize_line(pixel p1, pixel p2, TGAImage &image, TGAColor color, int depth_buffer[]) {
+void wireframe_render(std::string filename) {
+    std::fstream model_file;
+
+    /* Modify path to change which relative folder renderer searches for when
+    rendering models. */
+    std::string path = "obj/";
+    path.append(filename);
+    std::string line;
+
+    model_file.open(path.c_str());
+
+    
+    std::vector<vec3> vertices;
+    std::vector<vec3> faces;
+
+    int start, space_index, slash_index;
+
+    /* When starting the parsing, the second character is where
+    we want to substring from. */
+    start = 2;
+    /* Input parsing */
+    while(std::getline(model_file, line)) {
+        
+        if(line[0] == 'v' && line[1] == ' ') {
+            /* We parse the string and pass a vertex into our vector */
+            vec3 vertex;
+            
+            double coordinates[3];
+
+            
+            start = 2;
+            
+            for(int i = 0; i < 3; ++i) {
+                space_index = line.find(" ", start);
+                
+                coordinates[i] = std::stod(line.substr(start, space_index - start));
+                start = space_index + 1;
+            }
+
+            vertex = {coordinates[0], coordinates[1], coordinates[2]};
+
+            vertices.push_back(vertex);
+        }
+        else if(line[0] == 'f' && line[1] == ' ') {
+            /* We parse the string and pass a face into our vector */
+            vec3 face;
+
+            double vertices[3];
+
+            start = 2;
+
+            for(int i = 0; i < 3; ++i) {
+                space_index = line.find(" ", start);
+                slash_index = line.find("/", start);
+                
+                vertices[i] = std::stod(line.substr(start, slash_index - start));
+                start = space_index + 1;
+            }
+
+            face = {vertices[0], vertices[1], vertices[2]};
+            faces.push_back(face);
+
+        }
+    }
+
+}
+
+
+void rasterize_line(vec2 p1, vec2 p2, TGAImage &image, TGAColor color, int depth_buffer[]) {
     if (p1.x>p2.x) {
         std::swap(p1, p2);
     }
@@ -225,7 +304,7 @@ void rasterize_line(pixel p1, pixel p2, TGAImage &image, TGAColor color, int dep
 }
 
 
-void rasterize(pixel p1, pixel p2, pixel p3, TGAImage &image, TGAColor color, int depth_buffer[]) {
+void rasterize(vec2 p1, vec2 p2, vec2 p3, TGAImage &image, TGAColor color, int depth_buffer[]) {
 
 }
 
@@ -237,16 +316,18 @@ int main(int argc, char** argv) {
 	TGAImage image(width, height, TGAImage::RGB);
 
 
-    int zbuffer[width*height];
-    for(int x=0; x<width; ++x) {
-        for(int y = 0; y < height; ++y) {
-            zbuffer[x*width + y] = std::numeric_limits<int>::min();
-        }
-    }
+    wireframe_render("african_head.obj");
 
-    rasterize({1, 1}, {1, 1}, {1, 1}, image, red, zbuffer);
+    // int zbuffer[width*height];
+    // for(int x=0; x<width; ++x) {
+    //     for(int y = 0; y < height; ++y) {
+    //         zbuffer[x*width + y] = std::numeric_limits<int>::min();
+    //     }
+    // }
 
-    line({10,10}, {790, 10}, image, white);
+    // rasterize({1, 1}, {1, 1}, {1, 1}, image, red, zbuffer);
+
+    // line({10,10}, {790, 10}, image, white);
 
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
 	image.write_tga_file("output.tga");
