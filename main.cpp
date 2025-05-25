@@ -237,7 +237,7 @@ so the following for loop can be parallelized.
 }
 
 
-vec2 projection_on_screen(vec3 p) {
+vec2 projection_on_screen(vec3 p, uint32_t offset) {
     /* 
     We know that the basis vectors for the screen is e1, e2.
     Let our vector of interest be x.
@@ -250,10 +250,10 @@ vec2 projection_on_screen(vec3 p) {
     /* Calculate projections here */
     vec3 proj_p1 = dot_product(p, e1)*e1 + dot_product(p, e2)*e2;
 
-    return {proj_p1.x, proj_p1.y};
+    return {proj_p1.x + offset, proj_p1.y + offset};
 }
 
-void wireframe_render(std::string filename, TGAImage &image, TGAColor color) {
+void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color) {
     std::fstream model_file;
 
     /* Modify path to change which relative folder renderer searches for when
@@ -288,7 +288,7 @@ void wireframe_render(std::string filename, TGAImage &image, TGAColor color) {
             for(int i = 0; i < 3; ++i) {
                 space_index = line.find(" ", start);
                 
-                coordinates[i] = std::stod(line.substr(start, space_index - start));
+                coordinates[i] = std::stod(line.substr(start, space_index - start)) * scale_factor;
                 start = space_index + 1;
             }
 
@@ -322,7 +322,7 @@ void wireframe_render(std::string filename, TGAImage &image, TGAColor color) {
     screen, to form some vector c, d. Then we call the line() or hollow_triangle()
     function on c and d*/
 
-    for(int i = 0; i < faces.size(); ++i) {
+    for(uint32_t i = 0; i < faces.size(); ++i) {
         vec3 p1, p2, p3;
 
         /* Assign the vertices */
@@ -331,7 +331,9 @@ void wireframe_render(std::string filename, TGAImage &image, TGAColor color) {
         p3 = vertices[faces[i].z];
 
         /* Draw a face with the projected vertices on the given image with the given color */
-        hollow_triangle(projection_on_screen(p1), projection_on_screen(p2), projection_on_screen(p3), image, color);
+        hollow_triangle(projection_on_screen(p1, offset), 
+                        projection_on_screen(p2, offset), 
+                        projection_on_screen(p3, offset), image, color);
     }
 
 
@@ -360,12 +362,17 @@ void rasterize(vec2 p1, vec2 p2, vec2 p3, TGAImage &image, TGAColor color, int d
 
 int main(int argc, char** argv) {
     int width, height;
+    
     width = 800;
     height = 800;
+    uint32_t offset, scale_factor;
+    scale_factor = 300;
+    offset = 800 / 2;
+
 	TGAImage image(width, height, TGAImage::RGB);
 
 
-    wireframe_render("african_head.obj", image, red);
+    wireframe_render("african_head.obj", scale_factor, offset, image, white);
 
     // int zbuffer[width*height];
     // for(int x=0; x<width; ++x) {
