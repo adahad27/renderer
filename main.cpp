@@ -36,6 +36,22 @@ bool operator!=(vec2 p1, vec2 p2) {
 }
 
 
+double dot_product(vec2 p1, vec2 p2) {
+    return p1.x * p2.x + p1.y + p2.y;
+}
+
+double dot_product(vec3 p1, vec3 p2) {
+    return p1.x * p2.x + p1.y * p2.y + p1.z * p2.z;
+}
+
+vec3 operator*(double k, vec3 p) {
+    return {k*p.x, k*p.y, k*p.z};
+}
+
+vec3 operator+(vec3 p1, vec3 p2) {
+    return {p1.x + p2.x, p1.y + p2.y, p1.z + p2.z};
+}
+
 void line(vec2 p1, vec2 p2, TGAImage &image, TGAColor color) { 
     bool steep = false; 
     if (std::abs(p1.x-p2.x)<std::abs(p1.y-p2.y)) { 
@@ -221,7 +237,23 @@ so the following for loop can be parallelized.
 }
 
 
-void wireframe_render(std::string filename) {
+vec2 projection_on_screen(vec3 p) {
+    /* 
+    We know that the basis vectors for the screen is e1, e2.
+    Let our vector of interest be x.
+    proj_screen(x) = ((x dot e1)/(e1 dot e1))*(e1) +  ((x dot e2)/(e2 dot e2))*(e2)
+    proj_screen(x) = (x dot e1) * e1 + (x dot e2) * e2.
+    */
+    vec3 e1 = {1, 0, 0};
+    vec3 e2 = {0, 1, 0};
+
+    /* Calculate projections here */
+    vec3 proj_p1 = dot_product(p, e1)*e1 + dot_product(p, e2)*e2;
+
+    return {proj_p1.x, proj_p1.y};
+}
+
+void wireframe_render(std::string filename, TGAImage &image, TGAColor color) {
     std::fstream model_file;
 
     /* Modify path to change which relative folder renderer searches for when
@@ -275,8 +307,8 @@ void wireframe_render(std::string filename) {
             for(int i = 0; i < 3; ++i) {
                 space_index = line.find(" ", start);
                 slash_index = line.find("/", start);
-                
-                vertices[i] = std::stod(line.substr(start, slash_index - start));
+                /* Vertices are indexed from 1 in the .obj file */
+                vertices[i] = std::stod(line.substr(start, slash_index - start)) - 1;
                 start = space_index + 1;
             }
 
@@ -285,6 +317,23 @@ void wireframe_render(std::string filename) {
 
         }
     }
+
+    /* To draw a line from a to b, we must project a, b onto to the 
+    screen, to form some vector c, d. Then we call the line() or hollow_triangle()
+    function on c and d*/
+
+    for(int i = 0; i < faces.size(); ++i) {
+        vec3 p1, p2, p3;
+
+        /* Assign the vertices */
+        p1 = vertices[faces[i].x];
+        p2 = vertices[faces[i].y];
+        p3 = vertices[faces[i].z];
+
+        /* Draw a face with the projected vertices on the given image with the given color */
+        hollow_triangle(projection_on_screen(p1), projection_on_screen(p2), projection_on_screen(p3), image, color);
+    }
+
 
 }
 
@@ -316,7 +365,7 @@ int main(int argc, char** argv) {
 	TGAImage image(width, height, TGAImage::RGB);
 
 
-    wireframe_render("african_head.obj");
+    wireframe_render("african_head.obj", image, red);
 
     // int zbuffer[width*height];
     // for(int x=0; x<width; ++x) {
