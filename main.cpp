@@ -7,7 +7,7 @@
 #include <string>
 #include <fstream>
 #include <vector>
-
+#include <stdlib.h>
 
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
@@ -182,11 +182,28 @@ double calculate_triangle_area(vec2 p1, vec2 p2, vec2 p3) {
 }
 
 
-void triangle(vec2 p1, vec2 p2, vec2 p3, TGAImage &image, TGAColor color) {
+vec2 projection_on_screen(vec3 p, uint32_t offset) {
+    /* 
+    We know that the basis vectors for the screen is e1, e2.
+    Let our vector of interest be x.
+    proj_screen(x) = ((x dot e1)/(e1 dot e1))*(e1) +  ((x dot e2)/(e2 dot e2))*(e2)
+    proj_screen(x) = (x dot e1) * e1 + (x dot e2) * e2.
+    */
+    vec3 e1 = {1, 0, 0};
+    vec3 e2 = {0, 1, 0};
+
+    /* Calculate projections here */
+    vec3 proj_p1 = dot_product(p, e1)*e1 + dot_product(p, e2)*e2;
+
+    return {proj_p1.x + offset, proj_p1.y + offset};
+}
+
+
+void triangle(vec3 p1, vec3 p2, vec3 p3, uint32_t offset, TGAImage &image, TGAColor color, int width, int z_buffer[]) {
     /*
     First we draw the bounding box for the triangle
     */
-    vec2 points[3] = {p1, p2, p3};
+    vec2 points[3] = {projection_on_screen(p1, offset), projection_on_screen(p2, offset), projection_on_screen(p3, offset)};
     
     int bottom_limit, top_limit, right_limit, left_limit;
 
@@ -216,18 +233,26 @@ so the following for loop can be parallelized.
 #pragma omp parallel for
 
 */
-    double total_area = calculate_triangle_area(p1, p2, p3);
+    double total_area = calculate_triangle_area(points[0], points[1], points[2]);
     double area_1, area_2, area_3;
     vec2 current_vec2;
     for(int x = left_limit; x <= right_limit; ++x) {
         for(int y = bottom_limit; y <= top_limit; ++y) {
             current_vec2 = {(double)x, (double)y};
 
-            area_1 = calculate_triangle_area(current_vec2, p1, p2) / total_area;
-            area_2 = calculate_triangle_area(current_vec2, p2, p3) / total_area;
-            area_3 = calculate_triangle_area(current_vec2, p3, p1) / total_area;
+            area_1 = calculate_triangle_area(current_vec2, points[0], points[1]) / total_area; //alpha
+            area_2 = calculate_triangle_area(current_vec2, points[1], points[2]) / total_area; //beta
+            area_3 = calculate_triangle_area(current_vec2, points[2], points[0]) / total_area; //gamma
             
-            if(!(area_1 < 0 || area_2 < 0 || area_3 <0)) {
+
+            /* Interpolate depth for each pixel in the triangle here using the
+            barycentric coordinates for the triangle*/
+
+            double z_value = area_1*p1.z + area_2*p2.z + area_3*p3.z;
+
+            /* We also make a check for the z_buffer to see how close values are */
+            if(!(area_1 < 0 || area_2 < 0 || area_3 <0) && z_buffer[x*width + y] < z_value) {
+                z_buffer[x*width + y] = z_value;
                 image.set(x, y, color);
             }
             
@@ -237,23 +262,7 @@ so the following for loop can be parallelized.
 }
 
 
-vec2 projection_on_screen(vec3 p, uint32_t offset) {
-    /* 
-    We know that the basis vectors for the screen is e1, e2.
-    Let our vector of interest be x.
-    proj_screen(x) = ((x dot e1)/(e1 dot e1))*(e1) +  ((x dot e2)/(e2 dot e2))*(e2)
-    proj_screen(x) = (x dot e1) * e1 + (x dot e2) * e2.
-    */
-    vec3 e1 = {1, 0, 0};
-    vec3 e2 = {0, 1, 0};
-
-    /* Calculate projections here */
-    vec3 proj_p1 = dot_product(p, e1)*e1 + dot_product(p, e2)*e2;
-
-    return {proj_p1.x + offset, proj_p1.y + offset};
-}
-
-void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color) {
+void parse_obj(std::string filename, uint32_t scale_factor, std::vector<vec3> &vertices, std::vector<vec3> &faces) {
     std::fstream model_file;
 
     /* Modify path to change which relative folder renderer searches for when
@@ -265,8 +274,7 @@ void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offs
     model_file.open(path.c_str());
 
     
-    std::vector<vec3> vertices;
-    std::vector<vec3> faces;
+    
 
     int start, space_index, slash_index;
 
@@ -317,6 +325,14 @@ void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offs
 
         }
     }
+}
+
+void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color) {
+    
+    std::vector<vec3> vertices;
+    std::vector<vec3> faces;
+    
+    parse_obj(filename, scale_factor, vertices, faces);
 
     /* To draw a line from a to b, we must project a, b onto to the 
     screen, to form some vector c, d. Then we call the line() or hollow_triangle()
@@ -337,6 +353,28 @@ void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offs
     }
 
 
+}
+
+
+void solid_render(std::string filename, uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color, int width, int zbuffer[]) {
+    
+    std::vector<vec3> vertices;
+    std::vector<vec3> faces;
+    
+    parse_obj(filename, scale_factor, vertices, faces);
+
+    for(uint32_t i = 0; i < faces.size(); ++i) {
+        vec3 p1, p2, p3;
+
+        /* Assign the vertices */
+        p1 = vertices[faces[i].x];
+        p2 = vertices[faces[i].y];
+        p3 = vertices[faces[i].z];
+
+        TGAColor random = TGAColor(rand() % 256, rand() % 256, rand() % 256, 255);
+
+        triangle(p1, p2, p3, offset, image, random, width, zbuffer);
+    }
 }
 
 
@@ -372,14 +410,19 @@ int main(int argc, char** argv) {
 	TGAImage image(width, height, TGAImage::RGB);
 
 
-    wireframe_render("african_head.obj", scale_factor, offset, image, white);
+    
 
-    // int zbuffer[width*height];
-    // for(int x=0; x<width; ++x) {
-    //     for(int y = 0; y < height; ++y) {
-    //         zbuffer[x*width + y] = std::numeric_limits<int>::min();
-    //     }
-    // }
+    int zbuffer[width*height];
+    for(int x=0; x<width; ++x) {
+        for(int y = 0; y < height; ++y) {
+            zbuffer[x*width + y] = std::numeric_limits<int>::min();
+        }
+    }
+
+
+    // wireframe_render("african_head.obj", scale_factor, offset, image, white);
+
+    solid_render("diablo3_pose.obj", scale_factor, offset, image, white, width, zbuffer);
 
     // rasterize({1, 1}, {1, 1}, {1, 1}, image, red, zbuffer);
 
