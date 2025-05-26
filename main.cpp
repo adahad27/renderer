@@ -225,7 +225,7 @@ so the following for loop can be parallelized.
 }
 
 
-void parse_obj(std::string filename, uint32_t scale_factor, std::vector<vec3> &vertices, std::vector<vec3> &textures,std::vector<vec3> &faces) {
+void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<vec3> &textures,std::vector<vec3> &faces) {
     std::fstream model_file;
 
     /* Modify path to change which relative folder renderer searches for when
@@ -259,7 +259,7 @@ void parse_obj(std::string filename, uint32_t scale_factor, std::vector<vec3> &v
             for(int i = 0; i < 3; ++i) {
                 space_index = line.find(" ", start);
                 
-                coordinates[i] = std::stod(line.substr(start, space_index - start)) * scale_factor;
+                coordinates[i] = std::stod(line.substr(start, space_index - start));
                 start = space_index + 1;
             }
 
@@ -278,7 +278,7 @@ void parse_obj(std::string filename, uint32_t scale_factor, std::vector<vec3> &v
             for(int i = 0; i < 3; ++i) {
                 space_index = line.find(" ", start);
                 
-                colors[i] = std::stod(line.substr(start, space_index - start)) * scale_factor;
+                colors[i] = std::stod(line.substr(start, space_index - start));
                 start = space_index + 1;
             }
 
@@ -310,13 +310,85 @@ void parse_obj(std::string filename, uint32_t scale_factor, std::vector<vec3> &v
     }
 }
 
+
+void scale_obj(uint32_t scale_factor, std::vector<vec3> &vertices) {
+    for(uint32_t i = 0; i < vertices.size(); ++i) {
+        vertices[i] = scale_factor * vertices[i];
+    }
+}
+
+
+double calculate_angle(double coordinate_1, double coordinate_2) {
+    double normalized = sqrt(pow(coordinate_1, 2) + pow(coordinate_2, 2));
+    coordinate_1 = coordinate_1 / normalized;
+    coordinate_2 = coordinate_2 / normalized;
+    
+    return atan2(coordinate_1, coordinate_2);
+}
+
+
+void rotate_obj(char axis, double angle, std::vector<vec3> &vertices) {
+    /*
+    This function will transform all of the coordinates of the vertices along 
+    the given axis with the given angle
+    Assume the angle is given in degrees.
+    */
+    if(axis == 'x') {
+        for(uint32_t i = 0; i < vertices.size(); ++i) {
+
+            double raw_y = vertices[i].y;
+            double raw_z = vertices[i].z;
+
+            double current_angle = calculate_angle(raw_z, raw_y);
+            current_angle += (angle * M_PI / 180);
+
+
+            vertices[i].y = cos(current_angle) * sqrt(pow(raw_y, 2) + pow(raw_z, 2));
+            vertices[i].z = sin(current_angle) * sqrt(pow(raw_y, 2) + pow(raw_z, 2));
+        }
+    }
+    else if(axis == 'y') {
+        for(uint32_t i = 0; i < vertices.size(); ++i) {
+
+            double raw_x = vertices[i].x;
+            double raw_z = vertices[i].z;
+
+            double current_angle = calculate_angle(raw_z, raw_x);
+            current_angle += (angle * M_PI / 180);
+
+
+            vertices[i].x = cos(current_angle) * sqrt(pow(raw_x, 2) + pow(raw_z, 2));
+            vertices[i].z = sin(current_angle) * sqrt(pow(raw_x, 2) + pow(raw_z, 2));
+        }
+    }
+    else if(axis == 'z') {
+        for(uint32_t i = 0; i < vertices.size(); ++i) {
+
+            double raw_x = vertices[i].x;
+            double raw_y = vertices[i].y;
+
+            double current_angle = calculate_angle(raw_y, raw_x);
+            current_angle += (angle * M_PI / 180);
+
+
+            vertices[i].x = cos(current_angle) * sqrt(pow(raw_x, 2) + pow(raw_y, 2));
+            vertices[i].y = sin(current_angle) * sqrt(pow(raw_x, 2) + pow(raw_y, 2));
+        }
+    }
+}
+
+
 void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color) {
     
     std::vector<vec3> vertices;
     std::vector<vec3> textures;
     std::vector<vec3> faces;
     
-    parse_obj(filename, scale_factor, vertices, textures, faces);
+    parse_obj(filename, vertices, textures, faces);
+
+    rotate_obj('x', 90, vertices);
+
+    scale_obj(scale_factor, vertices);
 
     /* To draw a line from a to b, we must project a, b onto to the 
     screen, to form some vector c, d. Then we call the line() or hollow_triangle()
@@ -346,7 +418,7 @@ void solid_render(std::string filename, uint32_t scale_factor, uint32_t offset, 
     std::vector<vec3> textures;
     std::vector<vec3> faces;
     
-    parse_obj(filename, scale_factor, vertices, textures, faces);
+    parse_obj(filename, vertices, textures, faces);
 
     for(uint32_t i = 0; i < faces.size(); ++i) {
         vec3 p1, p2, p3;
@@ -386,9 +458,9 @@ int main(int argc, char** argv) {
     }
 
 
-    // wireframe_render("african_head.obj", scale_factor, offset, image, white);
+    wireframe_render("african_head.obj", scale_factor, offset, image, white);
 
-    solid_render("diablo3_pose.obj", scale_factor, offset, image, white, width, zbuffer);
+    // solid_render("diablo3_pose.obj", scale_factor, offset, image, white, width, zbuffer);
 
 
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
