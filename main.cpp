@@ -1,56 +1,19 @@
 #include "tgaimage.h"
 #include <cassert>
-#include "model.h"
-#include "geometry.h"
 #include <iostream>
 #include <cmath>
 #include <string>
 #include <fstream>
 #include <vector>
 #include <stdlib.h>
-
+#include "vec.h"
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
 const TGAColor red   = TGAColor(255, 0,   0,   255);
 const TGAColor green = TGAColor(0, 255,   0,   255);
 const TGAColor blue  = TGAColor(0, 0,   255,   255);
 
-struct vec2
-{
-    double x;
-    double y;
-};
 
-struct vec3
-{
-    double x;
-    double y;
-    double z;
-};
-
-bool operator==(vec2 p1, vec2 p2) {
-    return p1.x == p2.x && p1.y == p2.y;
-}
-bool operator!=(vec2 p1, vec2 p2) {
-    return !(p1.x == p2.x && p1.y == p2.y);
-}
-
-
-double dot_product(vec2 p1, vec2 p2) {
-    return p1.x * p2.x + p1.y + p2.y;
-}
-
-double dot_product(vec3 p1, vec3 p2) {
-    return p1.x * p2.x + p1.y * p2.y + p1.z * p2.z;
-}
-
-vec3 operator*(double k, vec3 p) {
-    return {k*p.x, k*p.y, k*p.z};
-}
-
-vec3 operator+(vec3 p1, vec3 p2) {
-    return {p1.x + p2.x, p1.y + p2.y, p1.z + p2.z};
-}
 
 void line(vec2 p1, vec2 p2, TGAImage &image, TGAColor color) { 
     bool steep = false; 

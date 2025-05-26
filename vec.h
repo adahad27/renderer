@@ -1,0 +1,30 @@
+#ifndef VEC
+#define VEC
+
+struct vec2
+{
+    double x;
+    double y;
+};
+
+struct vec3
+{
+    double x;
+    double y;
+    double z;
+};
+
+bool operator==(vec2 p1, vec2 p2);
+
+bool operator!=(vec2 p1, vec2 p2);
+
+double dot_product(vec2 p1, vec2 p2);
+
+double dot_product(vec3 p1, vec3 p2);
+
+vec3 operator*(double k, vec3 p);
+
+vec3 operator+(vec3 p1, vec3 p2);
+
+
+#endif
