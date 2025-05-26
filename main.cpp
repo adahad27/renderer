@@ -262,7 +262,7 @@ so the following for loop can be parallelized.
 }
 
 
-void parse_obj(std::string filename, uint32_t scale_factor, std::vector<vec3> &vertices, std::vector<vec3> &faces) {
+void parse_obj(std::string filename, uint32_t scale_factor, std::vector<vec3> &vertices, std::vector<vec3> &textures,std::vector<vec3> &faces) {
     std::fstream model_file;
 
     /* Modify path to change which relative folder renderer searches for when
@@ -304,6 +304,26 @@ void parse_obj(std::string filename, uint32_t scale_factor, std::vector<vec3> &v
 
             vertices.push_back(vertex);
         }
+        else if(line[0] == 'v' && line[1] == 't') {
+            
+            vec3 texture;
+
+            double colors[3];
+
+            start = 4;
+
+            for(int i = 0; i < 3; ++i) {
+                space_index = line.find(" ", start);
+                
+                colors[i] = std::stod(line.substr(start, space_index - start)) * scale_factor;
+                start = space_index + 1;
+            }
+
+            texture = {colors[0], colors[1], colors[2]};
+
+            textures.push_back(texture);
+
+        }
         else if(line[0] == 'f' && line[1] == ' ') {
             /* We parse the string and pass a face into our vector */
             vec3 face;
@@ -330,9 +350,10 @@ void parse_obj(std::string filename, uint32_t scale_factor, std::vector<vec3> &v
 void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color) {
     
     std::vector<vec3> vertices;
+    std::vector<vec3> textures;
     std::vector<vec3> faces;
     
-    parse_obj(filename, scale_factor, vertices, faces);
+    parse_obj(filename, scale_factor, vertices, textures, faces);
 
     /* To draw a line from a to b, we must project a, b onto to the 
     screen, to form some vector c, d. Then we call the line() or hollow_triangle()
@@ -359,9 +380,10 @@ void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offs
 void solid_render(std::string filename, uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color, int width, int zbuffer[]) {
     
     std::vector<vec3> vertices;
+    std::vector<vec3> textures;
     std::vector<vec3> faces;
     
-    parse_obj(filename, scale_factor, vertices, faces);
+    parse_obj(filename, scale_factor, vertices, textures, faces);
 
     for(uint32_t i = 0; i < faces.size(); ++i) {
         vec3 p1, p2, p3;
@@ -377,25 +399,6 @@ void solid_render(std::string filename, uint32_t scale_factor, uint32_t offset, 
     }
 }
 
-
-void rasterize_line(vec2 p1, vec2 p2, TGAImage &image, TGAColor color, int depth_buffer[]) {
-    if (p1.x>p2.x) {
-        std::swap(p1, p2);
-    }
-    for (int x=p1.x; x<=p2.x; x++) {
-        float t = (x-p1.x)/(float)(p2.x-p1.x);
-        int y = p1.y*(1.-t) + p2.y*t;
-        if (depth_buffer[x]<y) {
-            depth_buffer[x] = y;
-            image.set(x, 0, color);
-        }
-    }
-}
-
-
-void rasterize(vec2 p1, vec2 p2, vec2 p3, TGAImage &image, TGAColor color, int depth_buffer[]) {
-
-}
 
 
 int main(int argc, char** argv) {
@@ -424,9 +427,6 @@ int main(int argc, char** argv) {
 
     solid_render("diablo3_pose.obj", scale_factor, offset, image, white, width, zbuffer);
 
-    // rasterize({1, 1}, {1, 1}, {1, 1}, image, red, zbuffer);
-
-    // line({10,10}, {790, 10}, image, white);
 
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
 	image.write_tga_file("output.tga");
