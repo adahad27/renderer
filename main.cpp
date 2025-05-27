@@ -204,14 +204,14 @@ so the following for loop can be parallelized.
 
     
 
-    p1_texture_x = texture_coodinates[(int) texture_index.x].x;
-    p1_texture_y = texture_coodinates[(int) texture_index.x].y;
+    p1_texture_x = texture_coodinates[(int) texture_index.z].x;
+    p1_texture_y = texture_coodinates[(int) texture_index.z].y;
 
-    p2_texture_x = texture_coodinates[(int) texture_index.y].x;
-    p2_texture_y = texture_coodinates[(int) texture_index.y].y;
+    p2_texture_x = texture_coodinates[(int) texture_index.x].x;
+    p2_texture_y = texture_coodinates[(int) texture_index.x].y;
 
-    p3_texture_x = texture_coodinates[(int) texture_index.z].x;
-    p3_texture_y = texture_coodinates[(int) texture_index.z].y;
+    p3_texture_x = texture_coodinates[(int) texture_index.y].x;
+    p3_texture_y = texture_coodinates[(int) texture_index.y].y;
     
     vec2 current_vec2;
     for(int x = left_limit; x <= right_limit; ++x) {
@@ -458,7 +458,7 @@ void solid_render(std::string filename, std::string texture_map_name,uint32_t sc
 
     parse_obj(filename, vertices, texture_coordinates, texture_indices, faces);
 
-    rotate_obj('y', 45, vertices);
+    // rotate_obj('y', 45, vertices);
 
     scale_obj(scale_factor, vertices);
 
@@ -470,7 +470,6 @@ void solid_render(std::string filename, std::string texture_map_name,uint32_t sc
         p2 = vertices[faces[i].y];
         p3 = vertices[faces[i].z];
 
-        TGAColor random = TGAColor(rand() % 256, rand() % 256, rand() % 256, 255);
 
         triangle(p1, p2, p3, texture_indices[i], texture_coordinates, offset, texture_map,image, width, zbuffer);
     }
@@ -481,11 +480,11 @@ void solid_render(std::string filename, std::string texture_map_name,uint32_t sc
 int main(int argc, char** argv) {
     int width, height;
     
-    width = 800;
-    height = 800;
+    width = 1024;
+    height = 1024;
     uint32_t offset, scale_factor;
     scale_factor = 300;
-    offset = 800 / 2;
+    offset = 1024 / 2;
 
 	TGAImage image(width, height, TGAImage::RGB);
 
@@ -502,7 +501,7 @@ int main(int argc, char** argv) {
 
     // wireframe_render("african_head.obj", scale_factor, offset, image, white);
 
-    solid_render("african_head.obj", "african_head_diffuse.tga",scale_factor, offset, image, white, width, zbuffer);
+    solid_render("diablo3_pose.obj", "diablo3_pose_diffuse.tga",scale_factor, offset, image, white, width, zbuffer);
 
 
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
