@@ -162,7 +162,7 @@ vec2 projection_on_screen(vec3 p, uint32_t offset) {
 }
 
 
-void triangle(vec3 p1, vec3 p2, vec3 p3, uint32_t offset, TGAImage &image, TGAColor color, int width, int z_buffer[]) {
+void triangle(vec3 p1, vec3 p2, vec3 p3, vec3 texture_index, std::vector<vec3> &texture_coodinates, uint32_t offset, TGAImage &texture_map,TGAImage &image, int width, int z_buffer[]) {
     /*
     First we draw the bounding box for the triangle
     */
@@ -198,6 +198,21 @@ so the following for loop can be parallelized.
 */
     double total_area = calculate_triangle_area(points[0], points[1], points[2]);
     double area_1, area_2, area_3;
+    
+    double p1_texture_x, p2_texture_x, p3_texture_x;
+    double p1_texture_y, p2_texture_y, p3_texture_y;
+
+    
+
+    p1_texture_x = texture_coodinates[(int) texture_index.x].x;
+    p1_texture_y = texture_coodinates[(int) texture_index.x].y;
+
+    p2_texture_x = texture_coodinates[(int) texture_index.y].x;
+    p2_texture_y = texture_coodinates[(int) texture_index.y].y;
+
+    p3_texture_x = texture_coodinates[(int) texture_index.z].x;
+    p3_texture_y = texture_coodinates[(int) texture_index.z].y;
+    
     vec2 current_vec2;
     for(int x = left_limit; x <= right_limit; ++x) {
         for(int y = bottom_limit; y <= top_limit; ++y) {
@@ -208,10 +223,17 @@ so the following for loop can be parallelized.
             area_3 = calculate_triangle_area(current_vec2, points[2], points[0]) / total_area; //gamma
             
 
-            /* Interpolate depth for each pixel in the triangle here using the
-            barycentric coordinates for the triangle*/
+            /* Depth interpolation using Barycentric Coordinates*/
 
             double z_value = area_1*p1.z + area_2*p2.z + area_3*p3.z;
+
+            /* UV texture coordinate interpolation using Barycentric Coordinates */
+
+            
+            double interpolated_texture_x = 1024 * (area_1*p1_texture_x + area_2*p2_texture_x + area_3*p3_texture_x);
+            double interpolated_texture_y = 1024 * (area_1*p1_texture_y + area_2*p2_texture_y + area_3*p3_texture_y);
+
+            TGAColor color = texture_map.get((int)interpolated_texture_x, (int)interpolated_texture_y);
 
             /* We also make a check for the z_buffer to see how close values are */
             if(!(area_1 < 0 || area_2 < 0 || area_3 <0) && z_buffer[x*width + y] < z_value) {
@@ -225,7 +247,7 @@ so the following for loop can be parallelized.
 }
 
 
-void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<vec3> &textures,std::vector<vec3> &faces) {
+void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<vec3> &texture_coodinates, std::vector<vec3> &texture_indices,std::vector<vec3> &faces) {
     std::fstream model_file;
 
     /* Modify path to change which relative folder renderer searches for when
@@ -239,7 +261,7 @@ void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<ve
     
     
 
-    int start, space_index, slash_index;
+    int start, space_index, slash_index_1, slash_index_2;
 
     /* When starting the parsing, the second character is where
     we want to substring from. */
@@ -284,27 +306,37 @@ void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<ve
 
             texture = {colors[0], colors[1], colors[2]};
 
-            textures.push_back(texture);
+            texture_coodinates.push_back(texture);
 
         }
         else if(line[0] == 'f' && line[1] == ' ') {
             /* We parse the string and pass a face into our vector */
             vec3 face;
+            vec3 texture_index;
+
 
             double vertices[3];
+            double coordinate_indices[3];
 
             start = 2;
 
             for(int i = 0; i < 3; ++i) {
                 space_index = line.find(" ", start);
-                slash_index = line.find("/", start);
+                slash_index_1 = line.find("/", start);
+                slash_index_2 = line.find("/", slash_index_1+1);
+                
                 /* Vertices are indexed from 1 in the .obj file */
-                vertices[i] = std::stod(line.substr(start, slash_index - start)) - 1;
+                
+                vertices[i] = std::stod(line.substr(start, slash_index_1 - start)) - 1;
+                coordinate_indices[i] = std::stod(line.substr(slash_index_1 + 1, slash_index_2 - slash_index_1 - 1)) - 1;
                 start = space_index + 1;
             }
 
             face = {vertices[0], vertices[1], vertices[2]};
+            texture_index = {coordinate_indices[0], coordinate_indices[1], coordinate_indices[2]};
+
             faces.push_back(face);
+            texture_indices.push_back(texture_index);
 
         }
     }
@@ -381,12 +413,12 @@ void rotate_obj(char axis, double angle, std::vector<vec3> &vertices) {
 void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color) {
     
     std::vector<vec3> vertices;
-    std::vector<vec3> textures;
+    std::vector<vec3> texture_coordinates;
+    std::vector<vec3> texture_indices;
     std::vector<vec3> faces;
     
-    parse_obj(filename, vertices, textures, faces);
+    parse_obj(filename, vertices, texture_coordinates, texture_indices, faces);
 
-    rotate_obj('x', 90, vertices);
 
     scale_obj(scale_factor, vertices);
 
@@ -412,13 +444,23 @@ void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offs
 }
 
 
-void solid_render(std::string filename, uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color, int width, int zbuffer[]) {
+void solid_render(std::string filename, std::string texture_map_name,uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color, int width, int zbuffer[]) {
     
     std::vector<vec3> vertices;
-    std::vector<vec3> textures;
+    std::vector<vec3> texture_coordinates;
+    std::vector<vec3> texture_indices;
     std::vector<vec3> faces;
     
-    parse_obj(filename, vertices, textures, faces);
+    TGAImage texture_map = TGAImage(1024, 1024, TGAImage::RGB);
+
+    texture_map.read_tga_file(texture_map_name.c_str());
+    texture_map.flip_vertically();
+
+    parse_obj(filename, vertices, texture_coordinates, texture_indices, faces);
+
+    rotate_obj('y', 45, vertices);
+
+    scale_obj(scale_factor, vertices);
 
     for(uint32_t i = 0; i < faces.size(); ++i) {
         vec3 p1, p2, p3;
@@ -430,7 +472,7 @@ void solid_render(std::string filename, uint32_t scale_factor, uint32_t offset, 
 
         TGAColor random = TGAColor(rand() % 256, rand() % 256, rand() % 256, 255);
 
-        triangle(p1, p2, p3, offset, image, random, width, zbuffer);
+        triangle(p1, p2, p3, texture_indices[i], texture_coordinates, offset, texture_map,image, width, zbuffer);
     }
 }
 
@@ -458,9 +500,9 @@ int main(int argc, char** argv) {
     }
 
 
-    wireframe_render("african_head.obj", scale_factor, offset, image, white);
+    // wireframe_render("african_head.obj", scale_factor, offset, image, white);
 
-    // solid_render("diablo3_pose.obj", scale_factor, offset, image, white, width, zbuffer);
+    solid_render("african_head.obj", "african_head_diffuse.tga",scale_factor, offset, image, white, width, zbuffer);
 
 
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
