@@ -14,6 +14,13 @@ struct vec3
     double z;
 };
 
+struct triangle_information
+{
+    vec3 vertices[3];
+    vec3 normals[3];
+    double reflectivities[3];
+};
+
 bool operator==(vec2 p1, vec2 p2);
 
 bool operator!=(vec2 p1, vec2 p2);

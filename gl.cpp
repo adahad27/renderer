@@ -158,12 +158,24 @@ vec2 projection_on_screen(vec3 p, uint32_t offset) {
     return {proj_p1.x + offset, proj_p1.y + offset};
 }
 
+double calculate_diffuse_intensity(double reflectivity, double light_intensity, vec3 surface_normal, vec3 light_direction) {
+    /*
+    Both surface_normal and light_direction must be unit vectors.
+    Furthermore, surface_normal should be positive */
+    return reflectivity * light_intensity * dot_product(surface_normal, light_direction);
+}
 
-void triangle(vec3 p1, vec3 p2, vec3 p3, vec3 texture_index, std::vector<vec3> &texture_coodinates, uint32_t offset, TGAImage &texture_map,TGAImage &image, int width, int z_buffer[]) {
+void modify_color_intensity(double intensity, TGAColor &color) {
+    double sum = color.r + color.g + color.b;
+    
+}
+
+/* TODO: Combine triangle_vertices[], vertex_normals[], and reflectivities[] into one structure and pass the structure in */
+void triangle(triangle_information triangle_info, vec3 light_direction, double light_intensity, vec3 texture_index, std::vector<vec3> &texture_coodinates, uint32_t offset, TGAImage &texture_map,TGAImage &image, int width, int z_buffer[]) {
     /*
     First we draw the bounding box for the triangle
     */
-    vec2 points[3] = {projection_on_screen(p1, offset), projection_on_screen(p2, offset), projection_on_screen(p3, offset)};
+    vec2 points[3] = {projection_on_screen(triangle_info.vertices[0], offset), projection_on_screen(triangle_info.vertices[1], offset), projection_on_screen(triangle_info.vertices[2], offset)};
     
     int bottom_limit, top_limit, right_limit, left_limit;
 
@@ -196,21 +208,26 @@ so the following for loop can be parallelized.
     double total_area = calculate_triangle_area(points[0], points[1], points[2]);
     double area_1, area_2, area_3;
     
-    double p1_texture_x, p2_texture_x, p3_texture_x;
-    double p1_texture_y, p2_texture_y, p3_texture_y;
 
+    /* Calculating texture coordinates at vertices to use for interpolation later */
+
+    double p1_texture_x = texture_coodinates[(int) texture_index.x].x;
+    double p1_texture_y = texture_coodinates[(int) texture_index.x].y;
+
+    double p2_texture_x = texture_coodinates[(int) texture_index.y].x;
+    double p2_texture_y = texture_coodinates[(int) texture_index.y].y;
+
+    double p3_texture_x = texture_coodinates[(int) texture_index.z].x;
+    double p3_texture_y = texture_coodinates[(int) texture_index.z].y;
     
+    /* Calculating intensity at vertices to use for interpolation later */
 
-    p1_texture_x = texture_coodinates[(int) texture_index.x].x;
-    p1_texture_y = texture_coodinates[(int) texture_index.x].y;
+    double p1_intensity = calculate_diffuse_intensity(triangle_info.reflectivities[0], light_intensity, triangle_info.normals[0], light_direction);
+    double p2_intensity = calculate_diffuse_intensity(triangle_info.reflectivities[1], light_intensity, triangle_info.normals[1], light_direction);
+    double p3_intensity = calculate_diffuse_intensity(triangle_info.reflectivities[2], light_intensity, triangle_info.normals[2], light_direction);
 
-    p2_texture_x = texture_coodinates[(int) texture_index.y].x;
-    p2_texture_y = texture_coodinates[(int) texture_index.y].y;
-
-    p3_texture_x = texture_coodinates[(int) texture_index.z].x;
-    p3_texture_y = texture_coodinates[(int) texture_index.z].y;
-    
     vec2 current_vec2;
+
     for(int x = left_limit; x <= right_limit; ++x) {
         for(int y = bottom_limit; y <= top_limit; ++y) {
             current_vec2 = {(double)x, (double)y};
@@ -222,7 +239,7 @@ so the following for loop can be parallelized.
 
             /* Depth interpolation using Barycentric Coordinates*/
 
-            double z_value = area_1*p1.z + area_2*p2.z + area_3*p3.z;
+            double z_value = area_1*triangle_info.vertices[0].z + area_2*triangle_info.vertices[1].z + area_3*triangle_info.vertices[2].z;
 
             /* UV texture coordinate interpolation using Barycentric Coordinates */
 
@@ -231,6 +248,12 @@ so the following for loop can be parallelized.
             double interpolated_texture_y = 1024 * (area_1*p1_texture_y + area_2*p2_texture_y + area_3*p3_texture_y);
 
             TGAColor color = texture_map.get((int)interpolated_texture_x, (int)interpolated_texture_y);
+
+            /* Intensity interpolation using Gouraud shading */
+
+            double interpolated_intensity = area_1*p1_intensity + area_2*p2_intensity + area_3*p3_intensity;
+
+            modify_color_intensity(interpolated_intensity, color);
 
             /* We also make a check for the z_buffer to see how close values are */
             if(!(area_1 < 0 || area_2 < 0 || area_3 <0) && z_buffer[x*width + y] < z_value) {
@@ -244,7 +267,7 @@ so the following for loop can be parallelized.
 }
 
 
-void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<vec3> &texture_coodinates, std::vector<vec3> &texture_indices,std::vector<vec3> &faces) {
+void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<vec3> &texture_coodinates, std::vector<vec3> &normals,std::vector<vec3> &texture_indices,std::vector<vec3> &faces) {
     std::fstream model_file;
 
     /* Modify path to change which relative folder renderer searches for when
@@ -305,6 +328,24 @@ void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<ve
 
             texture_coodinates.push_back(texture);
 
+        }
+        else if(line[0] == 'v' && line[1] == 'n') {
+            vec3 normal;
+
+            double normal_coordinates[3];
+
+            start = 4;
+
+            for(int i = 0; i < 3; ++i) {
+                space_index = line.find(" ", start);
+                
+                normal_coordinates[i] = std::stod(line.substr(start, space_index - start));
+                start = space_index + 1;
+            }
+
+            normal = {normal_coordinates[0], normal_coordinates[1], normal_coordinates[2]};
+
+            normals.push_back(normal);
         }
         else if(line[0] == 'f' && line[1] == ' ') {
             /* We parse the string and pass a face into our vector */
@@ -411,10 +452,11 @@ void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offs
     
     std::vector<vec3> vertices;
     std::vector<vec3> texture_coordinates;
+    std::vector<vec3> normals;
     std::vector<vec3> texture_indices;
     std::vector<vec3> faces;
     
-    parse_obj(filename, vertices, texture_coordinates, texture_indices, faces);
+    parse_obj(filename, vertices, texture_coordinates, normals, texture_indices, faces);
 
 
     scale_obj(scale_factor, vertices);
@@ -441,33 +483,47 @@ void wireframe_render(std::string filename, uint32_t scale_factor, uint32_t offs
 }
 
 
-void solid_render(std::string filename, std::string texture_map_name,uint32_t scale_factor, uint32_t offset, TGAImage &image, TGAColor color, int width, int zbuffer[]) {
+void solid_render(std::string filename,uint32_t scale_factor, uint32_t offset, TGAImage &image, vec3 light_direction, double light_intensity, int width, int zbuffer[]) {
     
     std::vector<vec3> vertices;
     std::vector<vec3> texture_coordinates;
+    std::vector<vec3> normals;
     std::vector<vec3> texture_indices;
     std::vector<vec3> faces;
     
     TGAImage texture_map = TGAImage(1024, 1024, TGAImage::RGB);
 
+    std::string texture_map_name = "obj/";
+    texture_map_name.append(filename.substr(0, filename.length() - 4));
+    texture_map_name.append("_diffuse.tga");
+
     texture_map.read_tga_file(texture_map_name.c_str());
     texture_map.flip_vertically();
 
-    parse_obj(filename, vertices, texture_coordinates, texture_indices, faces);
+    parse_obj(filename, vertices, texture_coordinates, normals, texture_indices, faces);
 
     // rotate_obj('y', 45, vertices);
 
     scale_obj(scale_factor, vertices);
 
     for(uint32_t i = 0; i < faces.size(); ++i) {
-        vec3 p1, p2, p3;
+        
+        
 
-        /* Assign the vertices */
-        p1 = vertices[faces[i].x];
-        p2 = vertices[faces[i].y];
-        p3 = vertices[faces[i].z];
+        triangle_information triangle_info;
 
+        triangle_info.vertices[0] = vertices[faces[i].x];
+        triangle_info.vertices[1] = vertices[faces[i].y];
+        triangle_info.vertices[2] = vertices[faces[i].z];
 
-        triangle(p1, p2, p3, texture_indices[i], texture_coordinates, offset, texture_map,image, width, zbuffer);
+        triangle_info.normals[0] = normals[faces[i].x];
+        triangle_info.normals[1] = normals[faces[i].y];
+        triangle_info.normals[2] = normals[faces[i].z];
+
+        triangle_info.reflectivities[0] = 0.75;
+        triangle_info.reflectivities[1] = 0.75;
+        triangle_info.reflectivities[2] = 0.75;
+
+        triangle(triangle_info, light_direction, light_intensity, texture_indices[i], texture_coordinates, offset, texture_map,image, width, zbuffer);
     }
 }
