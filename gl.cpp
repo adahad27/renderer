@@ -189,10 +189,10 @@ void triangle(triangle_information triangle_info, vec3 light_direction, double l
 
     for(int i = 0; i < 3; ++i) {
         if(points[i].y < bottom_limit) {
-            bottom_limit = points[i].y;
+            bottom_limit = std::max(points[i].y, 0.);
         }
         if(points[i].x < left_limit) {
-            left_limit = points[i].x;
+            left_limit = std::max(points[i].x, 0.);
         }
         if(points[i].y > top_limit) {
             top_limit = points[i].y;
