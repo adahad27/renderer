@@ -223,12 +223,6 @@ so the following for loop can be parallelized.
     double p3_texture_x = texture_coodinates[(int) texture_index.z].x;
     double p3_texture_y = texture_coodinates[(int) texture_index.z].y;
     
-    /* Calculating intensity at vertices to use for interpolation later */
-
-    double p1_intensity = calculate_diffuse_intensity(triangle_info.reflectivities[0], light_intensity, triangle_info.normals[0], light_direction);
-    double p2_intensity = calculate_diffuse_intensity(triangle_info.reflectivities[1], light_intensity, triangle_info.normals[1], light_direction);
-    double p3_intensity = calculate_diffuse_intensity(triangle_info.reflectivities[2], light_intensity, triangle_info.normals[2], light_direction);
-
     vec2 current_vec2;
 
     for(int x = left_limit; x <= right_limit; ++x) {
@@ -257,11 +251,15 @@ so the following for loop can be parallelized.
 
                 TGAColor color = texture_map.get((int)interpolated_texture_x, (int)interpolated_texture_y);
 
-                /* Intensity interpolation using Gouraud shading */
+                /* Intensity interpolation using Phong shading */
 
-                double interpolated_intensity = area_1*p1_intensity + area_2*p2_intensity + area_3*p3_intensity;
 
-                modify_color_intensity(interpolated_intensity, color);
+                vec3 interpolated_normal = area_1*triangle_info.normals[0] + area_2*triangle_info.normals[1] + area_3*triangle_info.normals[2];
+                double interpolated_reflectiveness = area_1*triangle_info.reflectivities[0] + area_2*triangle_info.reflectivities[1] + area_3*triangle_info.reflectivities[2];
+                double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, light_intensity, interpolated_normal, light_direction);
+
+                modify_color_intensity(diffuse_intensity, color);
+
 
                 z_buffer[x*width + y] = z_value;
                 image.set(x, y, color);
