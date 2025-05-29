@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 
 	TGAImage image(width, height, TGAImage::RGB);
 
-    vec3 light_direction = {1/sqrt(2), 1/sqrt(2), 0};
+    vec3 light_direction = {0, 0, 1};
     double light_intensity = 1;
     
 
@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
 
     // wireframe_render("african_head.obj", scale_factor, offset, image, white);
 
-    solid_render("african_head.obj",scale_factor, offset, image, light_direction, light_intensity, width, zbuffer);
+    solid_render("diablo3_pose.obj",scale_factor, offset, image, light_direction, light_intensity, width, zbuffer);
 
 
 	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image

@@ -162,12 +162,13 @@ double calculate_diffuse_intensity(double reflectivity, double light_intensity, 
     /*
     Both surface_normal and light_direction must be unit vectors.
     Furthermore, surface_normal should be positive */
-    return reflectivity * light_intensity * dot_product(surface_normal, light_direction);
+    return reflectivity * light_intensity * std::max(dot_product(surface_normal, light_direction), 0.0);
 }
 
 void modify_color_intensity(double intensity, TGAColor &color) {
-    double sum = color.r + color.g + color.b;
-    
+    color.r *= intensity;
+    color.g *= intensity;
+    color.b *= intensity;
 }
 
 /* TODO: Combine triangle_vertices[], vertex_normals[], and reflectivities[] into one structure and pass the structure in */
@@ -241,22 +242,25 @@ so the following for loop can be parallelized.
 
             double z_value = area_1*triangle_info.vertices[0].z + area_2*triangle_info.vertices[1].z + area_3*triangle_info.vertices[2].z;
 
-            /* UV texture coordinate interpolation using Barycentric Coordinates */
-
             
-            double interpolated_texture_x = 1024 * (area_1*p1_texture_x + area_2*p2_texture_x + area_3*p3_texture_x);
-            double interpolated_texture_y = 1024 * (area_1*p1_texture_y + area_2*p2_texture_y + area_3*p3_texture_y);
-
-            TGAColor color = texture_map.get((int)interpolated_texture_x, (int)interpolated_texture_y);
-
-            /* Intensity interpolation using Gouraud shading */
-
-            double interpolated_intensity = area_1*p1_intensity + area_2*p2_intensity + area_3*p3_intensity;
-
-            modify_color_intensity(interpolated_intensity, color);
 
             /* We also make a check for the z_buffer to see how close values are */
             if(!(area_1 < 0 || area_2 < 0 || area_3 <0) && z_buffer[x*width + y] < z_value) {
+
+                /* UV texture coordinate interpolation using Barycentric Coordinates */
+
+            
+                double interpolated_texture_x = 1024 * (area_1*p1_texture_x + area_2*p2_texture_x + area_3*p3_texture_x);
+                double interpolated_texture_y = 1024 * (area_1*p1_texture_y + area_2*p2_texture_y + area_3*p3_texture_y);
+
+                TGAColor color = texture_map.get((int)interpolated_texture_x, (int)interpolated_texture_y);
+
+                /* Intensity interpolation using Gouraud shading */
+
+                double interpolated_intensity = area_1*p1_intensity + area_2*p2_intensity + area_3*p3_intensity;
+
+                modify_color_intensity(interpolated_intensity, color);
+
                 z_buffer[x*width + y] = z_value;
                 image.set(x, y, color);
             }
@@ -520,9 +524,9 @@ void solid_render(std::string filename,uint32_t scale_factor, uint32_t offset, T
         triangle_info.normals[1] = normals[faces[i].y];
         triangle_info.normals[2] = normals[faces[i].z];
 
-        triangle_info.reflectivities[0] = 0.75;
-        triangle_info.reflectivities[1] = 0.75;
-        triangle_info.reflectivities[2] = 0.75;
+        triangle_info.reflectivities[0] = 1;
+        triangle_info.reflectivities[1] = 1;
+        triangle_info.reflectivities[2] = 1;
 
         triangle(triangle_info, light_direction, light_intensity, texture_indices[i], texture_coordinates, offset, texture_map,image, width, zbuffer);
     }
