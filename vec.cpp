@@ -31,3 +31,7 @@ void normalize(vec3 &v) {
     v.y /= norm;
     v.z /= norm;
 }
+
+vec3 cross_product(vec3 v, vec3 u) {
+    return {v.y*u.z - v.z*u.y, v.z*u.x - v.x*u.z ,v.x*u.y - v.y*u.x};
+}
