@@ -162,6 +162,8 @@ double calculate_diffuse_intensity(double reflectivity, double light_intensity, 
     /*
     Both surface_normal and light_direction must be unit vectors.
     Furthermore, surface_normal should be positive */
+    normalize(surface_normal);
+    normalize(light_direction);
     return reflectivity * light_intensity * std::max(dot_product(surface_normal, light_direction), 0.0);
 }
 
