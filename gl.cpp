@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include "vec.h"
 #include "gl.h"
-
+#include <sstream>
 
 
 
@@ -300,19 +300,18 @@ void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<ve
             vec3 vertex;
             
             double coordinates[3];
+            std::stringstream ss(line);
+            std::string token;
 
-            
-            start = 2;
-            
-            for(int i = 0; i < 3; ++i) {
-                space_index = line.find(" ", start);
-                
-                coordinates[i] = std::stod(line.substr(start, space_index - start));
-                start = space_index + 1;
+            uint32_t index = 0;
+
+            while(std::getline(ss, token, ' ')) {
+                if(index != 0) {
+                    coordinates[index - 1] = std::stod(token);
+                }
+                index += 1;
             }
-
             vertex = {coordinates[0], coordinates[1], coordinates[2]};
-
             vertices.push_back(vertex);
         }
         else if(line[0] == 'v' && line[1] == 't') {
@@ -321,13 +320,20 @@ void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<ve
 
             double colors[3];
 
-            start = 4;
+            std::stringstream ss(line);
+            std::string token;
 
-            for(int i = 0; i < 3; ++i) {
-                space_index = line.find(" ", start);
+            uint32_t index = 0;
+
+            while(std::getline(ss, token, ' ')) {
+                if(index != 0 && token != "") {
+                    colors[index - 1] = std::stod(token);
+                }
+                if(token != "") {
+                    /* Accounts for the case when there is more than one space between data points */
+                    index += 1;
+                }
                 
-                colors[i] = std::stod(line.substr(start, space_index - start));
-                start = space_index + 1;
             }
 
             texture = {colors[0], colors[1], colors[2]};
@@ -340,13 +346,20 @@ void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<ve
 
             double normal_coordinates[3];
 
-            start = 4;
+            std::stringstream ss(line);
+            std::string token;
 
-            for(int i = 0; i < 3; ++i) {
-                space_index = line.find(" ", start);
+            uint32_t index = 0;
+
+            while(std::getline(ss, token, ' ')) {
+                if(index != 0 && token != "") {
+                    normal_coordinates[index - 1] = std::stod(token);
+                }
+                if(token != "") {
+                    /* Accounts for the case when there is more than one space between data points */
+                    index += 1;
+                }
                 
-                normal_coordinates[i] = std::stod(line.substr(start, space_index - start));
-                start = space_index + 1;
             }
 
             normal = {normal_coordinates[0], normal_coordinates[1], normal_coordinates[2]};
@@ -362,18 +375,21 @@ void parse_obj(std::string filename, std::vector<vec3> &vertices, std::vector<ve
             double vertices[3];
             double coordinate_indices[3];
 
-            start = 2;
+            std::stringstream ss(line);
+            std::string token;
 
-            for(int i = 0; i < 3; ++i) {
-                space_index = line.find(" ", start);
-                slash_index_1 = line.find("/", start);
-                slash_index_2 = line.find("/", slash_index_1+1);
+            uint32_t index = 0;
+
+            while(std::getline(ss, token, ' ')) {
+                if(index != 0 && token != "") {
+                    vertices[index - 1] = std::stod(token.substr(0, token.find("/"))) - 1;
+                    coordinate_indices[index - 1] = std::stod(token.substr(token.find("/") + 1, token.rfind("/") - token.find("/") - 1)) - 1;
+                }
+                if(token != "") {
+                    /* Accounts for the case when there is more than one space between data points */
+                    index += 1;
+                }
                 
-                /* Vertices are indexed from 1 in the .obj file */
-                
-                vertices[i] = std::stod(line.substr(start, slash_index_1 - start)) - 1;
-                coordinate_indices[i] = std::stod(line.substr(slash_index_1 + 1, slash_index_2 - slash_index_1 - 1)) - 1;
-                start = space_index + 1;
             }
 
             face = {vertices[0], vertices[1], vertices[2]};
