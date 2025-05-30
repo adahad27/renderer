@@ -254,7 +254,8 @@ so the following for loop can be parallelized.
                 /* Intensity interpolation using Phong shading */
 
 
-                vec3 interpolated_normal = area_1*triangle_info.normals[0] + area_2*triangle_info.normals[1] + area_3*triangle_info.normals[2];
+                vec3 interpolated_normal = area_1*triangle_info.normals[2] + area_2*triangle_info.normals[0] + area_3*triangle_info.normals[1];
+
                 double interpolated_reflectiveness = area_1*triangle_info.reflectivities[0] + area_2*triangle_info.reflectivities[1] + area_3*triangle_info.reflectivities[2];
                 double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, light_intensity, interpolated_normal, light_direction);
 
