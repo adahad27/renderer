@@ -15,35 +15,25 @@ const TGAColor green = TGAColor(0, 255,   0,   255);
 const TGAColor blue  = TGAColor(0, 0,   255,   255);
 
 int main(int argc, char** argv) {
-    int width, height;
-    
-    width = 1024;
-    height = 1024;
-    uint32_t offset, scale_factor;
-    scale_factor = 300;
-    offset = 1024 / 2;
-
-	TGAImage image(width, height, TGAImage::RGB);
-
-    vec3 light_direction = {0, 0, 1};
-    double light_intensity = 1;
     
 
-    int zbuffer[width*height];
-    for(int x=0; x<width; ++x) {
-        for(int y = 0; y < height; ++y) {
-            zbuffer[x*width + y] = std::numeric_limits<int>::min();
-        }
-    }
+
+    Renderer renderer = Renderer();
 
 
-    // wireframe_render("african_head.obj", scale_factor, offset, image, white);
+    Model model = Model("obj/diablo3_pose.obj");
 
-    solid_render("diablo3_pose.obj",scale_factor, offset, image, light_direction, light_intensity, width, zbuffer);
+    renderer.load_texture("obj/diablo3_pose_diffuse.tga", 1024, 1024);
 
+    renderer.load_image(1024, 1024);
 
-	image.flip_vertically(); // i want to have the origin at the left bottom corner of the image
-	image.write_tga_file("output.tga");
+    renderer.change_scale(300);
+
+    // renderer.wireframe(model, white);
+
+    renderer.render(model);
+
+    renderer.write("output.tga");
 	return 0;
 }
 
