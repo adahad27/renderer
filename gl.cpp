@@ -168,9 +168,10 @@ double calculate_diffuse_intensity(double reflectivity, double light_intensity, 
 }
 
 void modify_color_intensity(double intensity, TGAColor &color) {
-    color.r *= intensity;
-    color.g *= intensity;
-    color.b *= intensity;
+    /* Taking the min allows for higher brightness levels for the user. */
+    color.r = std::min(color.r * intensity, 255.0);
+    color.g = std::min(color.g * intensity, 255.0);
+    color.b = std::min(color.b * intensity, 255.0);
 }
 
 /* TODO: Combine triangle_vertices[], vertex_normals[], and reflectivities[] into one structure and pass the structure in */
@@ -195,10 +196,10 @@ void triangle(triangle_information triangle_info, vec3 light_direction, double l
             left_limit = std::max(points[i].x, 0.);
         }
         if(points[i].y > top_limit) {
-            top_limit = points[i].y;
+            top_limit = std::min(points[i].y, (double)width);
         }
         if(points[i].x > right_limit) {
-            right_limit = points[i].x;
+            right_limit = std::min(points[i].x, (double)width);
         }
     }
 
@@ -229,14 +230,14 @@ so the following for loop can be parallelized.
         for(int y = bottom_limit; y <= top_limit; ++y) {
             current_vec2 = {(double)x, (double)y};
 
-            area_1 = calculate_triangle_area(current_vec2, points[0], points[1]) / total_area; //alpha
-            area_2 = calculate_triangle_area(current_vec2, points[1], points[2]) / total_area; //beta
-            area_3 = calculate_triangle_area(current_vec2, points[2], points[0]) / total_area; //gamma
+            area_1 = calculate_triangle_area(current_vec2, points[0], points[1]) / total_area; //gamma
+            area_2 = calculate_triangle_area(current_vec2, points[1], points[2]) / total_area; //alpha
+            area_3 = calculate_triangle_area(current_vec2, points[2], points[0]) / total_area; //beta
             
 
             /* Depth interpolation using Barycentric Coordinates*/
 
-            double z_value = area_1*triangle_info.vertices[0].z + area_2*triangle_info.vertices[1].z + area_3*triangle_info.vertices[2].z;
+            double z_value = area_1*triangle_info.vertices[2].z + area_2*triangle_info.vertices[0].z + area_3*triangle_info.vertices[1].z;
 
             
 
