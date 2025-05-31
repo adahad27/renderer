@@ -56,7 +56,8 @@ Renderer::Renderer() {
 
 void Renderer::load_image(int width, int height) {
     image = TGAImage(width, height, TGAImage::RGB);
-
+    image_width = width;
+    image_height = height;
     /* Resize the z-buffer to the proper dimensions, and then fill it. */
     z_buffer.resize(width * height);
     for(auto &item : z_buffer){
@@ -68,6 +69,7 @@ void Renderer::load_image(int width, int height) {
 void Renderer::load_texture(std::string filename, int width, int height) {
     texture_map = TGAImage(width, height, TGAImage::RGB);
     texture_map.read_tga_file(filename.c_str());
+    texture_map.flip_vertically();
 }
 
 void Renderer::write(std::string filename) {
@@ -122,84 +124,6 @@ void Renderer::hollow_triangle(vec2 p1, vec2 p2, vec2 p3, TGAColor color) {
     line(p2, p3, color);
     line(p3, p1, color);
 }
-
-
-// void traditional_triangle(vec2 p1, vec2 p2, vec2 p3, TGAImage &image, TGAColor color) {
-    
-//     /* We must confirm that the points for the triangle are distinct points. */
-//     assert(p1 != p2);
-//     assert(p2 != p3);
-//     assert(p1 != p3);
-
-//     /* This will draw the sides of the triangle. */
-//     line(p1, p2, image, color);
-//     line(p2, p3, image, color);
-//     line(p3, p1, image, color);
-
-//     /* 
-//     Now we must fill in the triangle, which we can do by sweeping a line over the triangle.
-//     So to fill in the triangle, let us try using a vertical line that sweeps from left to right. 
-//     */
-
-//     vec2 points[3] = {p1, p2, p3};
-
-//     int x_left = INT32_MAX;
-//     int x_right = 0;
-
-//     vec2 left_point, right_point, middle_point;
-
-//     for(uint32_t i = 0; i < 3; ++i) {
-        
-//         if(points[i].x < x_left) {
-//             x_left = points[i].x;
-//             left_point = points[i];
-//         }
-//         if(points[i].x > x_right) {
-//             x_right = points[i].x;
-//             right_point = points[i];
-//         }
-//     }
-
-//     for(uint32_t i = 0; i < 3; ++i) {
-//         if(points[i] != left_point && points[i] != right_point) {
-//             middle_point = points[i];
-//             break;
-//         }
-//     }
-//     int y_top, y_bot;
-//     int y_line = left_point.y + ((right_point.y - left_point.y) / (right_point.x - left_point.x)) * (middle_point.x - left_point.x);
-//     for(int x=0; x<=middle_point.x - x_left; ++x) {
-        
-//         /* Now we must calculate the correct values of y_bot, y_top for each x-value */
-//         y_top = left_point.y + x*(middle_point.y - left_point.y)/float(middle_point.x - left_point.x);
-//         y_bot = left_point.y + x*(right_point.y - left_point.y)/float(right_point.x - left_point.x);
-
-//         if(middle_point.y < y_line) { 
-//             std::swap(y_top, y_bot);
-//         }        
-        
-//         for(int y=y_bot; y<y_top; ++y) {
-//             image.set(x + x_left, y, color);
-//         }
-//     }
-//     if(middle_point.y < y_line) { 
-//             std::swap(y_top, y_bot);
-//     } 
-//     int y_top_offset = y_top;
-//     int y_bot_offset = y_bot;
-//     for(int x=0; x<=x_right - middle_point.x; ++x) {
-        
-//         /* Now we must calculate the correct values of y_bot, y_top for each x-value */
-//         y_top = y_top_offset + x*(right_point.y - middle_point.y)/float(right_point.x - middle_point.x);
-//         y_bot = y_bot_offset + x*(right_point.y - left_point.y)/float(right_point.x - left_point.x);
-//         if(middle_point.y < y_line) { 
-//             std::swap(y_top, y_bot);
-//         } 
-//         for(int y=y_bot; y<y_top; ++y) {
-//             image.set(x + middle_point.x, y, color);
-//         }
-//     }
-// }
 
 
 double Renderer::calculate_triangle_area(vec2 p1, vec2 p2, vec2 p3) {
@@ -298,6 +222,7 @@ so the following for loop can be parallelized.
         for(int y = bottom_limit; y <= top_limit; ++y) {
             current_vec2 = {(double)x, (double)y};
 
+            /* TODO: Change the variable names for alpha, beta, and gamma to be accurate to Barycentric coordinates */
             area_1 = calculate_triangle_area(current_vec2, points[0], points[1]) / total_area; //gamma
             area_2 = calculate_triangle_area(current_vec2, points[1], points[2]) / total_area; //alpha
             area_3 = calculate_triangle_area(current_vec2, points[2], points[0]) / total_area; //beta
@@ -457,7 +382,7 @@ void Model::parse_obj(std::string filename) {
                 }
                 
             }
-
+            /* TODO: Change the order in which vertices are paassed for texture_indices */
             face = {face_vertices[0], face_vertices[1], face_vertices[2]};
             texture_index = {coordinate_indices[2], coordinate_indices[0], coordinate_indices[1]};
 
