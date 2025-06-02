@@ -119,7 +119,7 @@ vec2 Renderer::projection_on_screen(vec3 p) {
     /* Calculate projections here */
     vec3 proj_p1 = dot_product(p, e1)*e1 + dot_product(p, e2)*e2;
 
-    return {proj_p1.x + 512, proj_p1.y + 512};
+    return {proj_p1.x + image_width/2 - camera_position.x * scale, proj_p1.y + image_width/2 - camera_position.y * scale};
 }
 
 double calculate_diffuse_intensity(double reflectivity, vec3 &vertex,vec3 &surface_normal, Light &light) {
@@ -139,7 +139,7 @@ void modify_color_intensity(double intensity, TGAColor &color) {
     color.b = std::min(color.b * intensity, 255.0);
 }
 
-/* TODO: Combine triangle_vertices[], vertex_normals[], and reflectivities[] into one structure and pass the structure in */
+
 void Renderer::triangle(triangle_information triangle_info, vec3 texture_index, std::vector <vec3> &texture_coordinates) {
     /*
     First we draw the bounding box for the triangle
@@ -254,6 +254,9 @@ double Renderer::calculate_angle(double coordinate_1, double coordinate_2) {
     return atan2(coordinate_1, coordinate_2);
 }
 
+void Renderer::change_camera(vec2 v) {
+    camera_position = v;
+}
 
 void Renderer::change_rotation(char axis, double angle, Model &model) {
     /*

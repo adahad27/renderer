@@ -31,7 +31,8 @@ int main(int argc, char** argv) {
 
     // renderer.light.set_position({0, 500, 200});
 
-    renderer.change_rotation('y', -90, model);
+    // renderer.change_rotation('y', 180, model);
+    renderer.change_camera({0, 0});
 
     // renderer.wireframe(model, white);
 
