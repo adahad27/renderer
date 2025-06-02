@@ -56,7 +56,7 @@ class Renderer {
 
         void change_scale(double zoom);
 
-        void change_rotation(double rotation);
+        void change_rotation(char axis, double rotation, Model &model);
 
         void write(std::string filename);
 

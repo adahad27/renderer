@@ -29,7 +29,9 @@ int main(int argc, char** argv) {
 
     renderer.change_scale(300);
 
-    renderer.light.set_position({0, 500, 200});
+    // renderer.light.set_position({0, 500, 200});
+
+    renderer.change_rotation('y', -90, model);
 
     // renderer.wireframe(model, white);
 

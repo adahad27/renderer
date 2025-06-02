@@ -36,4 +36,6 @@ vec3 operator+(vec3 p1, vec3 p2);
 void normalize(vec3 &v);
 
 vec3 cross_product(vec3 v, vec3 u);
+
+vec3 matmul(vec3 mat[], vec3 v);
 #endif

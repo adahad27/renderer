@@ -255,55 +255,50 @@ double Renderer::calculate_angle(double coordinate_1, double coordinate_2) {
 }
 
 
-// void rotate_obj(char axis, double angle, std::vector<vec3> &vertices) {
-//     /*
-//     This function will transform all of the coordinates of the vertices along 
-//     the given axis with the given angle
-//     Assume the angle is given in degrees.
-//     */
-//     if(axis == 'x') {
-//         for(uint32_t i = 0; i < vertices.size(); ++i) {
+void Renderer::change_rotation(char axis, double angle, Model &model) {
+    /*
+    This function will transform all of the coordinates of the vertices along 
+    the given axis with the given angle
+    Assume the angle is given in degrees.
+    */
 
-//             double raw_y = vertices[i].y;
-//             double raw_z = vertices[i].z;
+    vec3 rotation_matrix[3];
+    
+    if(axis == 'x') {
+        
+        rotation_matrix[0] = {1, 0, 0};
+        rotation_matrix[1] = {0, cos(angle * M_PI / 180), -1*sin(angle * M_PI / 180)};
+        rotation_matrix[2] = {0, sin(angle * M_PI / 180), cos(angle * M_PI / 180)};
 
-//             double current_angle = calculate_angle(raw_z, raw_y);
-//             current_angle += (angle * M_PI / 180);
+        for(uint32_t i = 0; i < model.vertices.size(); ++i) {
 
+            model.vertices[i] = matmul(rotation_matrix, model.vertices[i]);
+            model.normals[i] = matmul(rotation_matrix, model.normals[i]);
+        }
+    }
+    else if(axis == 'y') {
+        rotation_matrix[0] = {cos(angle * M_PI / 180), 0, sin(angle * M_PI / 180)};
+        rotation_matrix[1] = {0, 1, 0};
+        rotation_matrix[2] = {-1*sin(angle * M_PI / 180), 0, cos(angle * M_PI / 180)};
 
-//             vertices[i].y = cos(current_angle) * sqrt(pow(raw_y, 2) + pow(raw_z, 2));
-//             vertices[i].z = sin(current_angle) * sqrt(pow(raw_y, 2) + pow(raw_z, 2));
-//         }
-//     }
-//     else if(axis == 'y') {
-//         for(uint32_t i = 0; i < vertices.size(); ++i) {
+        for(uint32_t i = 0; i < model.vertices.size(); ++i) {
 
-//             double raw_x = vertices[i].x;
-//             double raw_z = vertices[i].z;
+            model.vertices[i] = matmul(rotation_matrix, model.vertices[i]);
+            model.normals[i] = matmul(rotation_matrix, model.normals[i]);
+        }
+    }
+    else if(axis == 'z') {
+        rotation_matrix[0] = {cos(angle * M_PI / 180), -1*sin(angle * M_PI / 180), 0};
+        rotation_matrix[1] = {sin(angle * M_PI / 180), cos(angle * M_PI / 180), 0};
+        rotation_matrix[2] = {0, 0, 1};
 
-//             double current_angle = calculate_angle(raw_z, raw_x);
-//             current_angle += (angle * M_PI / 180);
+        for(uint32_t i = 0; i < model.vertices.size(); ++i) {
 
-
-//             vertices[i].x = cos(current_angle) * sqrt(pow(raw_x, 2) + pow(raw_z, 2));
-//             vertices[i].z = sin(current_angle) * sqrt(pow(raw_x, 2) + pow(raw_z, 2));
-//         }
-//     }
-//     else if(axis == 'z') {
-//         for(uint32_t i = 0; i < vertices.size(); ++i) {
-
-//             double raw_x = vertices[i].x;
-//             double raw_y = vertices[i].y;
-
-//             double current_angle = calculate_angle(raw_y, raw_x);
-//             current_angle += (angle * M_PI / 180);
-
-
-//             vertices[i].x = cos(current_angle) * sqrt(pow(raw_x, 2) + pow(raw_y, 2));
-//             vertices[i].y = sin(current_angle) * sqrt(pow(raw_x, 2) + pow(raw_y, 2));
-//         }
-//     }
-// }
+            model.vertices[i] = matmul(rotation_matrix, model.vertices[i]);
+            model.normals[i] = matmul(rotation_matrix, model.normals[i]);
+        }
+    }
+}
 
 
 void Renderer::modify_vertices(Model &model) {
