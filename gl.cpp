@@ -22,10 +22,27 @@ void Light::set_intensity(double light_intensity) {
     intensity = light_intensity;
 }
 
+void Light::set_position(vec3 light_position) {
+    position = light_position;
+}
+
+void Light::set_mode(LightMode light_mode) {
+    mode = light_mode;
+}
+
+void Light::set_falloff(double light_falloff) {
+    distance_falloff = light_falloff;
+}
+
 Light::Light() {
     color = TGAColor(255, 255, 255, 255);
+    
     direction = {0, 0, 1};
+    position = {0, 0, 1};
+
+    mode = directional_light;
     intensity = 1;
+    distance_falloff = 200;
 }
 
 TGAColor Light::get_color() {
@@ -38,6 +55,18 @@ vec3 Light::get_direction() {
 
 double Light::get_intensity() {
     return intensity;
+}
+
+LightMode Light::get_mode() {
+    return mode;
+}
+
+vec3 Light::get_position() {
+    return position;
+}
+
+double Light::get_falloff() {
+    return distance_falloff;
 }
 
 Model::Model(std::string filename) {
@@ -133,6 +162,13 @@ double Renderer::calculate_triangle_area(vec2 p1, vec2 p2, vec2 p3) {
     return 0.5*((p2.y-p1.y)*(p2.x+p1.x) + (p3.y-p2.y)*(p3.x+p2.x) + (p1.y-p3.y)*(p1.x+p3.x));
 }
 
+double distance(vec3 p1, vec3 p2) {
+    return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2) + pow(p1.z - p2.z, 2));
+}
+
+double distance(vec2 p1, vec2 p2) {
+    return sqrt(pow(p1.x - p2.x, 2) + pow(p1.y - p2.y, 2));
+}
 
 vec2 Renderer::projection_on_screen(vec3 p) {
     /* 
@@ -150,13 +186,14 @@ vec2 Renderer::projection_on_screen(vec3 p) {
     return {proj_p1.x + 512, proj_p1.y + 512};
 }
 
-double calculate_diffuse_intensity(double reflectivity, double light_intensity, vec3 surface_normal, vec3 light_direction) {
+double calculate_diffuse_intensity(double reflectivity, vec3 &vertex,vec3 &surface_normal, Light &light) {
     /*
     Both surface_normal and light_direction must be unit vectors.
     Furthermore, surface_normal should be positive */
     normalize(surface_normal);
-    normalize(light_direction);
-    return reflectivity * light_intensity * std::max(dot_product(surface_normal, light_direction), 0.0);
+    vec3 dir = light.get_direction();
+    normalize(dir);
+    return reflectivity * light.get_intensity() * std::max(dot_product(surface_normal, dir), 0.0) * (light.get_mode() == point_light?  light.get_falloff() / distance(vertex, light.get_position()) : 1);
 }
 
 void modify_color_intensity(double intensity, TGAColor &color) {
@@ -230,12 +267,10 @@ so the following for loop can be parallelized.
 
             /* Depth interpolation using Barycentric Coordinates*/
 
-            double z_value = area_1*triangle_info.vertices[2].z + area_2*triangle_info.vertices[0].z + area_3*triangle_info.vertices[1].z;
-
-            
+            vec3 interpolated_vertex = area_1*triangle_info.vertices[2] + area_2*triangle_info.vertices[0] + area_3*triangle_info.vertices[1];            
 
             /* We also make a check for the z_buffer to see how close values are */
-            if(!(area_1 < 0 || area_2 < 0 || area_3 <0) && z_buffer[x*image_width + y] < z_value) {
+            if(!(area_1 < 0 || area_2 < 0 || area_3 <0) && z_buffer[x*image_width + y] < interpolated_vertex.z) {
 
                 /* UV texture coordinate interpolation using Barycentric Coordinates */
 
@@ -251,12 +286,12 @@ so the following for loop can be parallelized.
                 vec3 interpolated_normal = area_1*triangle_info.normals[2] + area_2*triangle_info.normals[0] + area_3*triangle_info.normals[1];
 
                 double interpolated_reflectiveness = area_1*triangle_info.reflectivities[0] + area_2*triangle_info.reflectivities[1] + area_3*triangle_info.reflectivities[2];
-                double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, light.get_intensity(), interpolated_normal, light.get_direction());
+                double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal, light);
 
                 modify_color_intensity(diffuse_intensity, color);
 
 
-                z_buffer[x*image_width + y] = z_value;
+                z_buffer[x*image_width + y] = interpolated_vertex.z;
                 image.set(x, y, color);
             }
             
@@ -278,11 +313,7 @@ void Model::parse_obj(std::string filename) {
     
     
 
-    int start, space_index, slash_index_1, slash_index_2;
-
-    /* When starting the parsing, the second character is where
-    we want to substring from. */
-    start = 2;
+    
     /* Input parsing */
     while(std::getline(model_file, line)) {
         

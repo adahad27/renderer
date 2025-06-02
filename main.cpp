@@ -29,6 +29,8 @@ int main(int argc, char** argv) {
 
     renderer.change_scale(300);
 
+    renderer.light.set_position({0, 500, 200});
+
     // renderer.wireframe(model, white);
 
     renderer.render(model);

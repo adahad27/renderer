@@ -4,6 +4,11 @@
 #include "tgaimage.h"
 #include <string>
 
+enum LightMode {
+    point_light = 0,
+    directional_light = 1,
+    ambient_light = 2
+};
 
 class Model {
     /* 
@@ -37,9 +42,15 @@ class Model {
 class Light {
     private:
         TGAColor color;
+        
         vec3 direction;
+        vec3 position;
+
+        LightMode mode;
+        
         double intensity;
-    
+        double distance_falloff;
+
     public:
         
     Light();
@@ -52,11 +63,23 @@ class Light {
 
     void set_intensity(double light_intensity);
 
+    void set_position(vec3 light_position);
+
+    void set_mode(LightMode light_mode);
+
+    void set_falloff(double light_falloff);
+
     TGAColor get_color();
 
     vec3 get_direction();
 
     double get_intensity();
+
+    vec3 get_position();
+
+    LightMode get_mode();
+
+    double get_falloff();
 
     
 };
@@ -76,7 +99,7 @@ class Renderer {
         int texture_width, texture_height;
 
         std::vector <int> z_buffer;
-        Light light;
+        
         /* TODO: Add a vector of lights here */
         
         /* Class methods */
@@ -94,7 +117,8 @@ class Renderer {
 
         void modify_vertices(Model &model);
     public:
-        
+        Light light;
+
         Renderer();
 
         void load_image(int width, int height);
