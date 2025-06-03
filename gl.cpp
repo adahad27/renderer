@@ -123,7 +123,7 @@ vec2 Renderer::projection_on_screen(vec3 p) {
     return {proj_p1.x + image_width/2 - camera_position.x * scale, proj_p1.y + image_width/2 - camera_position.y * scale};
 }
 
-double calculate_diffuse_intensity(double reflectivity, vec3 &vertex,vec3 &surface_normal, Light &light) {
+double Renderer::calculate_diffuse_intensity(double reflectivity, vec3 &vertex,vec3 &surface_normal) {
     /*
     Both surface_normal and light_direction must be unit vectors.
     Furthermore, surface_normal should be positive */
@@ -232,7 +232,7 @@ so the following for loop can be parallelized.
                 vec3 interpolated_normal = area_1*triangle_info.normals[2] + area_2*triangle_info.normals[0] + area_3*triangle_info.normals[1];
 
                 double interpolated_reflectiveness = area_1*triangle_info.reflectivities[0] + area_2*triangle_info.reflectivities[1] + area_3*triangle_info.reflectivities[2];
-                double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal, light);
+                double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal);
                 diffuse_intensity += calculate_specular_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal);
                 modify_color_intensity(diffuse_intensity, color);
 
