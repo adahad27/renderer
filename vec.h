@@ -33,6 +33,8 @@ vec3 operator*(double k, vec3 p);
 
 vec3 operator+(vec3 p1, vec3 p2);
 
+vec3 operator-(vec3 p1, vec3 p2);
+
 void normalize(vec3 &v);
 
 vec3 cross_product(vec3 v, vec3 u);

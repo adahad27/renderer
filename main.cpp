@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
 
     renderer.change_scale(300);
 
-    // renderer.light.set_position({0, 500, 200});
+    renderer.light.set_direction({0, 1, 0});
 
     // renderer.change_rotation('y', 180, model);
     renderer.change_camera({0, 0});

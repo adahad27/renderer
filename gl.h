@@ -13,7 +13,8 @@ class Renderer {
         TGAImage image;
         TGAImage texture_map;
         
-        vec2 camera_position;
+        vec3 camera_position;
+        vec3 camera_direction;
         
         double rotation_theta;
         double scale;
@@ -39,6 +40,8 @@ class Renderer {
         void triangle(triangle_information triangle_info, vec3 texture_index, std::vector <vec3> &texture_coordinates);
 
         void modify_vertices(Model &model);
+
+        double calculate_specular_intensity(double reflectivity, vec3 &vertex, vec3 &surface_normal);
     public:
         Light light;
 
@@ -52,7 +55,7 @@ class Renderer {
 
         void render(Model &model);
 
-        void change_camera(vec2 v);
+        void change_camera(vec3 v);
 
         void change_scale(double zoom);
 

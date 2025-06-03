@@ -14,7 +14,8 @@
 
 
 Renderer::Renderer() {
-    camera_position = {0, 0};
+    camera_position = {0, 0, 1};
+    camera_direction = {0, 0, -1};
     rotation_theta = 0.;
     scale = 1.;
 }
@@ -132,6 +133,15 @@ double calculate_diffuse_intensity(double reflectivity, vec3 &vertex,vec3 &surfa
     return reflectivity * light.get_intensity() * std::max(dot_product(surface_normal, dir), 0.0) * (light.get_mode() == point_light?  light.get_falloff() / distance(vertex, light.get_position()) : 1);
 }
 
+
+double Renderer::calculate_specular_intensity(double reflectivity, vec3 &vertex, vec3 &surface_normal) {
+    normalize(surface_normal);
+    vec3 dir = -1*light.get_direction();
+    normalize(dir);
+    vec3 reflected_vector = 2*dot_product(dir, surface_normal)*surface_normal - dir;
+    return reflectivity * light.get_intensity() * pow(dot_product(reflected_vector, camera_direction), 100);
+}
+
 void modify_color_intensity(double intensity, TGAColor &color) {
     /* Taking the min allows for higher brightness levels for the user. */
     color.r = std::min(color.r * intensity, 255.0);
@@ -223,7 +233,7 @@ so the following for loop can be parallelized.
 
                 double interpolated_reflectiveness = area_1*triangle_info.reflectivities[0] + area_2*triangle_info.reflectivities[1] + area_3*triangle_info.reflectivities[2];
                 double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal, light);
-
+                diffuse_intensity += calculate_specular_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal);
                 modify_color_intensity(diffuse_intensity, color);
 
 
@@ -254,7 +264,7 @@ double Renderer::calculate_angle(double coordinate_1, double coordinate_2) {
     return atan2(coordinate_1, coordinate_2);
 }
 
-void Renderer::change_camera(vec2 v) {
+void Renderer::change_camera(vec3 v) {
     camera_position = v;
 }
 
