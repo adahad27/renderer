@@ -185,7 +185,7 @@ so the following for loop can be parallelized.
 
 */
     double total_area = calculate_triangle_area(points[0], points[1], points[2]);
-    double area_1, area_2, area_3;
+    double gamma, alpha, beta;
     
 
     /* Calculating texture coordinates at vertices to use for interpolation later */
@@ -206,32 +206,32 @@ so the following for loop can be parallelized.
             current_vec2 = {(double)x, (double)y};
 
             /* TODO: Change the variable names for alpha, beta, and gamma to be accurate to Barycentric coordinates */
-            area_1 = calculate_triangle_area(current_vec2, points[0], points[1]) / total_area; //gamma
-            area_2 = calculate_triangle_area(current_vec2, points[1], points[2]) / total_area; //alpha
-            area_3 = calculate_triangle_area(current_vec2, points[2], points[0]) / total_area; //beta
+            gamma = calculate_triangle_area(current_vec2, points[0], points[1]) / total_area; //gamma
+            alpha = calculate_triangle_area(current_vec2, points[1], points[2]) / total_area; //alpha
+            beta = calculate_triangle_area(current_vec2, points[2], points[0]) / total_area; //beta
             
 
             /* Depth interpolation using Barycentric Coordinates*/
 
-            vec3 interpolated_vertex = area_1*triangle_info.vertices[2] + area_2*triangle_info.vertices[0] + area_3*triangle_info.vertices[1];            
+            vec3 interpolated_vertex = gamma*triangle_info.vertices[2] + alpha*triangle_info.vertices[0] + beta*triangle_info.vertices[1];            
 
             /* We also make a check for the z_buffer to see how close values are */
-            if(!(area_1 < 0 || area_2 < 0 || area_3 <0) && z_buffer[x*image_width + y] < interpolated_vertex.z) {
+            if(!(gamma < 0 || alpha < 0 || beta <0) && z_buffer[x*image_width + y] < interpolated_vertex.z) {
 
                 /* UV texture coordinate interpolation using Barycentric Coordinates */
 
             
-                double interpolated_texture_x = 1024 * (area_1*p1_texture_x + area_2*p2_texture_x + area_3*p3_texture_x);
-                double interpolated_texture_y = 1024 * (area_1*p1_texture_y + area_2*p2_texture_y + area_3*p3_texture_y);
+                double interpolated_texture_x = 1024 * (alpha*p1_texture_x + beta*p2_texture_x + gamma*p3_texture_x);
+                double interpolated_texture_y = 1024 * (alpha*p1_texture_y + beta*p2_texture_y + gamma*p3_texture_y);
 
                 TGAColor color = texture_map.get((int)interpolated_texture_x, (int)interpolated_texture_y);
 
                 /* Intensity interpolation using Phong shading */
 
 
-                vec3 interpolated_normal = area_1*triangle_info.normals[2] + area_2*triangle_info.normals[0] + area_3*triangle_info.normals[1];
+                vec3 interpolated_normal = gamma*triangle_info.normals[2] + alpha*triangle_info.normals[0] + beta*triangle_info.normals[1];
 
-                double interpolated_reflectiveness = area_1*triangle_info.reflectivities[0] + area_2*triangle_info.reflectivities[1] + area_3*triangle_info.reflectivities[2];
+                double interpolated_reflectiveness = alpha*triangle_info.reflectivities[0] + beta*triangle_info.reflectivities[1] + gamma*triangle_info.reflectivities[2];
                 double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal);
                 diffuse_intensity += calculate_specular_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal);
                 modify_color_intensity(diffuse_intensity, color);

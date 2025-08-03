@@ -124,7 +124,7 @@ void Model::parse_obj(std::string filename) {
             }
             /* TODO: Change the order in which vertices are paassed for texture_indices */
             face = {face_vertices[0], face_vertices[1], face_vertices[2]};
-            texture_index = {coordinate_indices[2], coordinate_indices[0], coordinate_indices[1]};
+            texture_index = {coordinate_indices[0], coordinate_indices[1], coordinate_indices[2]};
 
             faces.push_back(face);
             texture_indices.push_back(texture_index);
