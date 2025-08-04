@@ -36,3 +36,4 @@
 main
 test
 *.cu
+obj/

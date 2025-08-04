@@ -1,5 +1,11 @@
 This project was started May 19th 2025.
-The goal of this project is to try writing a renderer on the CPU. This project will allow any user to use the graphics library provided to render a 3D model on their 2D screen complete with textures, shaders, and shadows.
+The goal of this project is to try writing a graphics renderer on the CPU (for now).
+This project will be capable of rendering wavefront object files (.obj) files, with more formats to come in the future.
+
+A similar, yet simpler, rendering pipeline to the one present in OpenGL is used for displaying images.
+Z-buffering is used to decrease the number of triangles to be drawn to decrease rendering times.
+For rendering UV textures, the renderer supports both Phong and Gouraud shading.
+Lighting over the model is handled with diffuse and specular reflection for all types of materials.
 
 ![Diablo3_front](images/Diablo3_front.jpg)
 ![Diablo3_left](images/Diablo3_left.jpg)
