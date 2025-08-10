@@ -12,6 +12,8 @@
 #include "light.h"
 
 
+SDL_Renderer *sdl_renderer = NULL;
+SDL_Window *sdl_window = NULL;
 
 Renderer::Renderer() {
     camera_position = {0, 0, 1};
@@ -66,9 +68,11 @@ void Renderer::line(vec2 p1, vec2 p2, TGAColor color) {
     int y = p1.y; 
     for (int x=p1.x; x<=p2.x; x++) { 
         if (steep) { 
-            image.set(y, x, color); 
+            SDL_SetRenderDrawColor(sdl_renderer, color.r, color.g, color.b, 255);
+            SDL_RenderDrawPoint(sdl_renderer, y, HEIGHT - x);
         } else { 
-            image.set(x, y, color); 
+            SDL_SetRenderDrawColor(sdl_renderer, color.r, color.g, color.b, 255);
+            SDL_RenderDrawPoint(sdl_renderer, x, HEIGHT - y); 
         } 
         error2 += derror2; 
         if (error2 > dx) { 
@@ -238,7 +242,8 @@ so the following for loop can be parallelized.
 
 
                 z_buffer[x*image_width + y] = interpolated_vertex.z;
-                image.set(x, y, color);
+                SDL_SetRenderDrawColor(sdl_renderer, color.r, color.g, color.b, 255);
+                SDL_RenderDrawPoint(sdl_renderer, x, HEIGHT - y); 
             }
             
         }
@@ -371,4 +376,5 @@ void Renderer::render(Model &model) {
 
         triangle(triangle_info, model.texture_indices[i], model.texture_coordinates);
     }
+    SDL_RenderPresent(sdl_renderer);
 }

@@ -1,11 +1,15 @@
 #include "interface.h"
 
+#include "vec.h"
+#include "gl.h"
+
 #define CMD_QUIT "quit"
 #define CMD_LOAD "load"
 #define CMD_ROTATE "rotate"
 #define CMD_SCALE "scale"
 #define PORT 8000
 #define MAX_MSG_LEN 1000
+
 
 //quit
 bool check_quit(std::vector<std::string> &args) {
@@ -52,6 +56,17 @@ bool check_scale(std::vector<std::string> &args) {
 }
 
 
+void load_model(std::string model_file, std::string texture_file) {
+    Renderer renderer = Renderer();
+    Model model = Model(model_file.c_str());
+
+    renderer.load_texture(texture_file.c_str(), WIDTH, HEIGHT);
+    renderer.load_image(WIDTH, HEIGHT);
+    renderer.light.set_direction({0, 0, 1});
+    renderer.change_scale(300);
+    renderer.render(model);
+}
+
 void start_IO_loop() {
     
 
@@ -75,8 +90,8 @@ void start_IO_loop() {
             std::cout << "Application closed!\n";
             return;
         }
-        else if(!input.compare(CMD_LOAD)) {
-
+        else if(!args[0].compare(CMD_LOAD)) {
+            load_model(args[1], args[2]);
         }
         else if(!input.compare(CMD_ROTATE)) {
 

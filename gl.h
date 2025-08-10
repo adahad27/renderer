@@ -5,7 +5,12 @@
 #include <string>
 #include "light.h"
 #include "model.h"
+#include <SDL2/SDL.h>
+#define WIDTH 1024
+#define HEIGHT 1024
 
+extern SDL_Renderer *sdl_renderer;
+extern SDL_Window *sdl_window;
 
 class Renderer {
     private:

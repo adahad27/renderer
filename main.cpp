@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include "vec.h"
 #include "gl.h"
-#include <SDL2/SDL.h>
 #include "interface.h"
 
 
@@ -17,35 +16,31 @@ const TGAColor red   = TGAColor(255, 0,   0,   255);
 const TGAColor green = TGAColor(0, 255,   0,   255);
 const TGAColor blue  = TGAColor(0, 0,   255,   255);
 
-SDL_Renderer *sdl_renderer = NULL;
-SDL_Window *sdl_window = NULL;
-SDL_Event event;
+
 
 uint16_t width = 1024;
 uint16_t height = 1024;
 
 int main(int argc, char** argv) {
-    
-
-    start_IO_loop();
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_CreateWindowAndRenderer(width, height, 0, &sdl_window, &sdl_renderer);
 
     SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 0);
     SDL_RenderClear(sdl_renderer);
+    
+    start_IO_loop();
 
     SDL_SetRenderDrawColor(sdl_renderer, 255, 0, 0, 255);
     for (int i = 0; i < width; ++i)
         SDL_RenderDrawPoint(sdl_renderer, i, i);
     SDL_RenderPresent(sdl_renderer);
-    while (1) {
-        if (SDL_PollEvent(&event) && event.type == SDL_QUIT)
-            break;
-    }
+    
     SDL_DestroyRenderer(sdl_renderer);
     SDL_DestroyWindow(sdl_window);
     SDL_Quit();
+
+    
 
     return 0;
 
