@@ -9,6 +9,7 @@
 #include "vec.h"
 #include "gl.h"
 #include <SDL2/SDL.h>
+#include "interface.h"
 
 
 const TGAColor white = TGAColor(255, 255, 255, 255);
@@ -25,6 +26,8 @@ uint16_t height = 1024;
 
 int main(int argc, char** argv) {
     
+
+    start_IO_loop();
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_CreateWindowAndRenderer(width, height, 0, &sdl_window, &sdl_renderer);
