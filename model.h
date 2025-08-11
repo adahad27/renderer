@@ -25,6 +25,8 @@ class Model {
         void parse_obj(std::string filename);
     
     public:
+
+        Model();
         
         Model(std::string filename);
         

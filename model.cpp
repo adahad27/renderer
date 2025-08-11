@@ -2,6 +2,10 @@
 #include <fstream>
 #include <sstream>
 
+Model::Model() {
+    
+}
+
 Model::Model(std::string filename) {
     Model::parse_obj(filename);
 }
