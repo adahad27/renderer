@@ -64,18 +64,18 @@ void load_model(std::string model_file, std::string texture_file) {
     renderer.load_texture(texture_file.c_str(), WIDTH, HEIGHT);
     renderer.load_image(WIDTH, HEIGHT);
     renderer.light.set_direction({0, 0, 1});
-    renderer.change_scale(1000);
+    // renderer.change_scale(1000);
     renderer.render(model);
 }
 
 void scale_model(std::string scale) {
-    renderer.change_scale(300);
+    renderer.change_scale(std::stod(scale));
     renderer.render(model);
 }
 
 void rotate_model(std::string axis, std::string degree) {
     std::cout << "Changing rotation on " << axis << " axis by " << degree << " degrees\n";
-    renderer.change_rotation(axis[0], std::stoi(degree), model);
+    renderer.change_rotation(axis[0], std::stod(degree), model);
     renderer.render(model);
 }
 

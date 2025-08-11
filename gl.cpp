@@ -353,6 +353,9 @@ void Renderer::wireframe(Model &model, TGAColor color) {
 
 
 void Renderer::render(Model &model) {
+    
+    SDL_SetRenderDrawColor(sdl_renderer, 0, 0, 0, 0);
+    SDL_RenderClear(sdl_renderer);
 
     modify_vertices(model);
 
