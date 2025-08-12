@@ -47,24 +47,24 @@ int main(int argc, char** argv) {
     Renderer renderer = Renderer();
 
 
-    Model model = Model("obj/diablo3_pose.obj");
+    // Model model = Model("obj/diablo3_pose.obj");
 
-    renderer.load_texture("obj/diablo3_pose_diffuse.tga", width, height);
+    // renderer.load_texture("obj/diablo3_pose_diffuse.tga", width, height);
 
-    renderer.load_image(width, height);
+    // renderer.load_image(width, height);
 
-    renderer.change_scale(300);
+    // renderer.change_scale(300);
 
-    renderer.light.set_direction({0, 0, 1});
+    // renderer.light.set_direction({0, 0, 1});
 
     // renderer.change_rotation('y', 180, model);
-    renderer.change_camera({0, 0});
+    // renderer.change_camera({0, 0});
 
     // renderer.wireframe(model, white);
 
-    renderer.render(model);
+    // renderer.render(model);
 
-    renderer.write("output.tga");
+    // renderer.write("output.tga");
 	return 0;
 }
 

@@ -121,3 +121,51 @@ void Parser::parse_obj(std::string filename, Model *model) {
         }
     }
 }
+
+
+void Parser::parse_mtl(std::string filename, std::unordered_map<std::string, Material> &materials) {
+    std::fstream mtl_file;
+    std::string line, word, current_mtl_name;
+    std::vector<std::string> words;
+
+    mtl_file.open(filename.c_str());
+
+    while(std::getline(mtl_file, line)) {
+        words.clear();
+        std::stringstream line_stream(line);
+        while(std::getline(line_stream, word, ' ')) {
+            words.push_back(word);
+        }
+
+        if(!words[0].compare("newmtl")) {
+            Material mat = Material();
+            materials.insert({words[1], mat});
+            current_mtl_name = words[1];
+        }
+        else if(!words[0].compare("Kd")) {
+            materials[current_mtl_name].Kd = {
+                std::stod(words[1]),
+                std::stod(words[2]),
+                std::stod(words[3])
+            };
+        }
+        else if(!words[0].compare("Ka")) {
+            materials[current_mtl_name].Ka = {
+                std::stod(words[1]),
+                std::stod(words[2]),
+                std::stod(words[3])
+            };
+        }
+        else if(!words[0].compare("Ks")) {
+            materials[current_mtl_name].Ks = {
+                std::stod(words[1]),
+                std::stod(words[2]),
+                std::stod(words[3])
+            };
+        }
+        else if(!words[0].compare("map_Kd")) {
+            materials[current_mtl_name].map_Kd = words[1];
+        }
+        
+    }
+}
