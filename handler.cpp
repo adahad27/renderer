@@ -1,5 +1,5 @@
-#include "interface.h"
-
+#include "handler.h"
+#include "parser.hpp"
 #include "vec.h"
 #include "gl.h"
 
@@ -11,6 +11,7 @@
 #define MAX_MSG_LEN 1000
 
 Renderer renderer = Renderer();
+Parser parser = Parser();
 Model model;
 
 //quit
@@ -59,7 +60,7 @@ bool check_scale(std::vector<std::string> &args) {
 
 
 void load_model(std::string model_file, std::string texture_file) {
-    model.load_model(model_file.c_str());
+    parser.parse_obj(model_file, &model);
 
     renderer.load_texture(texture_file.c_str(), WIDTH, HEIGHT);
     renderer.load_image(WIDTH, HEIGHT);

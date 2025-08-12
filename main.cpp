@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include "vec.h"
 #include "gl.h"
-#include "interface.h"
+#include "handler.h"
 
 
 const TGAColor white = TGAColor(255, 255, 255, 255);

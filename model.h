@@ -13,6 +13,7 @@ class Model {
     disturbing the model and forcing a strange rendering.
     */
     friend class Renderer;
+    friend class Parser;
     
     private:
         
@@ -22,16 +23,10 @@ class Model {
         std::vector <vec3> texture_indices;
         std::vector <vec3> faces;
         
-        void parse_obj(std::string filename);
     
     public:
 
         Model();
-        
-        Model(std::string filename);
-        
-        void load_model(std::string filename);
-
 
 };
 
