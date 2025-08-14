@@ -7,12 +7,12 @@
 #define CMD_LOAD "load"
 #define CMD_ROTATE "rotate"
 #define CMD_SCALE "scale"
-#define PORT 8000
-#define MAX_MSG_LEN 1000
+#define CMD_MAT "material"
 
 Renderer renderer = Renderer();
 Parser parser = Parser();
 Model model;
+std::unordered_map<std::string, Material> materials;
 
 //quit
 bool check_quit(std::vector<std::string> &args) {
@@ -65,8 +65,11 @@ void load_model(std::string model_file, std::string texture_file) {
     renderer.load_texture(texture_file.c_str(), WIDTH, HEIGHT);
     renderer.load_image(WIDTH, HEIGHT);
     renderer.light.set_direction({0, 0, 1});
-    // renderer.change_scale(1000);
     renderer.render(model);
+}
+
+void load_materials(std::string material_file) {
+    parser.parse_mtl(material_file, materials);
 }
 
 void scale_model(std::string scale) {
@@ -105,12 +108,17 @@ void start_IO_loop() {
         }
         else if(!args[0].compare(CMD_LOAD)) {
             load_model(args[1], args[2]);
+            std::cout << "If you can't see the model, try scaling it up!\n";
         }
         else if(!args[0].compare(CMD_ROTATE)) {
             rotate_model(args[1], args[2]);
         }
         else if(!args[0].compare(CMD_SCALE)) {
             scale_model(args[1]);
+        }
+        else if(!args[0].compare(CMD_MAT)) {
+            load_materials(args[1]);
+            std::cout << "Material file loaded\n";
         }
         else {
             std::cout << "Unrecognized Command\n";
