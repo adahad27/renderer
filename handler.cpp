@@ -11,7 +11,7 @@
 #define CMD_ROTATE "rotate"
 #define CMD_SCALE "scale"
 #define CMD_MAT "material"
-
+#define CMD_DBG_READ "read"
 Renderer renderer = Renderer();
 Parser parser = Parser();
 Model model;
@@ -95,12 +95,30 @@ void rotate_model(std::string axis, std::string degree) {
 
 
 void read_png(std::string filename) {
+    png_bytepp row_pointers;
     FILE* file = fopen(filename.c_str(), "rb");
+    
     
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     png_infop info_ptr = png_create_info_struct(png_ptr);
     png_init_io(png_ptr, file);
     png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+    
+    uint32_t width = png_get_image_width(png_ptr, info_ptr);
+    uint32_t height = png_get_image_height(png_ptr, info_ptr);
+
+    TGAImage image = TGAImage(width, height, TGAImage::RGB);
+
+    row_pointers = png_get_rows(png_ptr, info_ptr);
+    for(unsigned int i = 0; i < height; ++i) {
+        for(unsigned int j = 0; j < width * 3; j += 3) {
+            TGAColor color = TGAColor(row_pointers[i][j], row_pointers[i][j+1], row_pointers[i][j+2], 0);
+            image.set(i, j/3, color);
+        }
+    }
+    image.write_tga_file("png_2_.tga");
+    assert(row_pointers != NULL);
+
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
     fclose(file);
 
@@ -151,8 +169,9 @@ void start_IO_loop() {
         else if(!args[0].compare(CMD_MAT)) {
             load_materials(args[1]);
             std::cout << "Material file loaded\n";
-            
-            png_read_png(nullptr, nullptr, 0, nullptr);
+        }
+        else if(!args[0].compare(CMD_DBG_READ)) {
+            read_png(args[1]);
         }
         else {
             std::cout << "Unrecognized Command\n";
