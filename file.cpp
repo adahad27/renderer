@@ -1,4 +1,5 @@
-#include "parser.hpp"
+#include "file.hpp"
+#include "libpng/png.h"
 
 void Parser::parse_obj(std::string filename, Model *model) {
     std::fstream model_file;
@@ -168,4 +169,30 @@ void Parser::parse_mtl(std::string filename, std::unordered_map<std::string, Mat
         }
         
     }
+}
+
+void read_png_alloc(std::string filename, FILE* file, png_structp png_ptr, png_infop info_ptr) {
+    png_bytepp row_pointers;
+    file = fopen(filename.c_str(), "rb");
+    
+    
+    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    info_ptr = png_create_info_struct(png_ptr);
+    png_init_io(png_ptr, file);
+    png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+    
+
+}
+
+void read_png_free(FILE* file, png_structp png_ptr, png_infop info_ptr) {
+    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    fclose(file);
+}
+
+vec3 get_pixel(uint32_t x, uint32_t y, png_structp png_ptr, png_infop info_ptr) {
+    return {
+        png_get_rows(png_ptr, info_ptr)[x][3*y],
+        png_get_rows(png_ptr, info_ptr)[x][3*y+1],
+        png_get_rows(png_ptr, info_ptr)[x][3*y+2]
+    };
 }
