@@ -67,22 +67,17 @@ void Parser::parse_obj(std::string filename, Model *model) {
             double face_vertices[3];
             double coordinate_indices[3];
 
-            std::stringstream ss(line);
-            std::string token;
 
-            uint32_t index = 0;
-
-            while(std::getline(ss, token, ' ')) {
-                if(index != 0 && token != "") {
-                    face_vertices[index - 1] = std::stod(token.substr(0, token.find("/"))) - 1;
-                    coordinate_indices[index - 1] = std::stod(token.substr(token.find("/") + 1, token.rfind("/") - token.find("/") - 1)) - 1;
-                }
-                if(token != "") {
-                    /* Accounts for the case when there is more than one space between data points */
-                    index += 1;
-                }
+            for(uint32_t i = 0; i < 3; ++i) {
+                std::stringstream ss(token_list[i+1]);
                 
+                std::getline(ss, token, '/');
+                face_vertices[i] = std::stod(token) - 1;
+
+                std::getline(ss, token, '/');
+                coordinate_indices[i] = std::stod(token) - 1;
             }
+
             face = {face_vertices[0], face_vertices[1], face_vertices[2]};
             texture_index = {coordinate_indices[0], coordinate_indices[1], coordinate_indices[2]};
 
