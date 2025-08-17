@@ -16,75 +16,45 @@ void Parser::parse_obj(std::string filename, Model *model) {
     
     /* Input parsing */
     while(std::getline(model_file, line)) {
-        
-        if(line[0] == 'v' && line[1] == ' ') {
+        std::stringstream ss(line);
+        std::vector<std::string> token_list;
+        std::string token;
+
+        while(std::getline(ss, token, ' ')) {
+            token_list.push_back(token);
+        }
+
+        if(line[0] == 'o' && line[1] == ' ') {
+
+        }
+        else if(line[0] == 'v' && line[1] == ' ') {
             /* We parse the string and pass a vertex into our vector */
-            vec3 vertex;
             
-            double coordinates[3];
-            std::stringstream ss(line);
-            std::string token;
+            vec3 vertex = {
+                std::stod(token_list[1]),
+                std::stod(token_list[2]),
+                std::stod(token_list[3])
+            };
 
-            uint32_t index = 0;
-
-            while(std::getline(ss, token, ' ')) {
-                if(index != 0) {
-                    coordinates[index - 1] = std::stod(token);
-                }
-                index += 1;
-            }
-            vertex = {coordinates[0], coordinates[1], coordinates[2]};
             model->vertices.push_back(vertex);
         }
         else if(line[0] == 'v' && line[1] == 't') {
             
-            vec3 texture;
-
-            double colors[3];
-
-            std::stringstream ss(line);
-            std::string token;
-
-            uint32_t index = 0;
-
-            while(std::getline(ss, token, ' ')) {
-                if(index != 0 && token != "") {
-                    colors[index - 1] = std::stod(token);
-                }
-                if(token != "") {
-                    /* Accounts for the case when there is more than one space between data points */
-                    index += 1;
-                }
-                
-            }
-
-            texture = {colors[0], colors[1], colors[2]};
+            vec3 texture = {
+                std::stod(token_list[1]),
+                std::stod(token_list[2]),
+                std::stod(token_list[3])
+            };
 
             model->texture_coordinates.push_back(texture);
 
         }
         else if(line[0] == 'v' && line[1] == 'n') {
-            vec3 normal;
-
-            double normal_coordinates[3];
-
-            std::stringstream ss(line);
-            std::string token;
-
-            uint32_t index = 0;
-
-            while(std::getline(ss, token, ' ')) {
-                if(index != 0 && token != "") {
-                    normal_coordinates[index - 1] = std::stod(token);
-                }
-                if(token != "") {
-                    /* Accounts for the case when there is more than one space between data points */
-                    index += 1;
-                }
-                
-            }
-
-            normal = {normal_coordinates[0], normal_coordinates[1], normal_coordinates[2]};
+            vec3 normal = {
+                std::stod(token_list[1]),
+                std::stod(token_list[2]),
+                std::stod(token_list[3])
+            };
 
             model->normals.push_back(normal);
         }
@@ -172,7 +142,7 @@ void Parser::parse_mtl(std::string filename, std::unordered_map<std::string, Mat
 }
 
 void read_png_alloc(std::string filename, FILE* file, png_structp png_ptr, png_infop info_ptr) {
-    png_bytepp row_pointers;
+    // png_bytepp row_pointers;
     file = fopen(filename.c_str(), "rb");
     
     
@@ -189,10 +159,10 @@ void read_png_free(FILE* file, png_structp png_ptr, png_infop info_ptr) {
     fclose(file);
 }
 
-vec3 get_pixel(uint32_t x, uint32_t y, png_structp png_ptr, png_infop info_ptr) {
-    return {
-        png_get_rows(png_ptr, info_ptr)[x][3*y],
-        png_get_rows(png_ptr, info_ptr)[x][3*y+1],
-        png_get_rows(png_ptr, info_ptr)[x][3*y+2]
-    };
-}
+// vec3 get_pixel(uint32_t x, uint32_t y, png_structp png_ptr, png_infop info_ptr) {
+//     return {
+//         png_get_rows(png_ptr, info_ptr)[x][3*y],
+//         png_get_rows(png_ptr, info_ptr)[x][3*y+1],
+//         png_get_rows(png_ptr, info_ptr)[x][3*y+2]
+//     };
+// }
