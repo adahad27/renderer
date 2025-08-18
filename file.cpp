@@ -18,16 +18,21 @@ void Parser::parse_obj(std::string filename, Model *model) {
     while(std::getline(model_file, line)) {
         std::stringstream ss(line);
         std::vector<std::string> token_list;
+        
         std::string token;
+        std::string current_obj;
 
         while(std::getline(ss, token, ' ')) {
             token_list.push_back(token);
         }
-
-        if(line[0] == 'o' && line[1] == ' ') {
+        //load obj/diablo3_pose.obj obj/diablo3_pose_diffuse.tga
+        if(token_list.size() > 0 && !token_list[0].compare("v")) {
+            Component object;
+            model->components.insert({token_list[1], object});
+            current_obj = token_list[1];
 
         }
-        else if(line[0] == 'v' && line[1] == ' ') {
+        else if(token_list.size() > 0 && !token_list[0].compare("v")) {
             /* We parse the string and pass a vertex into our vector */
             
             vec3 vertex = {
@@ -36,9 +41,9 @@ void Parser::parse_obj(std::string filename, Model *model) {
                 std::stod(token_list[3])
             };
 
-            model->vertices.push_back(vertex);
+            model->components[current_obj].vertices.push_back(vertex);
         }
-        else if(line[0] == 'v' && line[1] == 't') {
+        else if(token_list.size() > 0 && !token_list[0].compare("vt")) {
             
             vec3 texture = {
                 std::stod(token_list[1]),
@@ -46,19 +51,17 @@ void Parser::parse_obj(std::string filename, Model *model) {
                 std::stod(token_list[3])
             };
 
-            model->texture_coordinates.push_back(texture);
-
+            model->components[current_obj].texture_coordinates.push_back(texture);
         }
-        else if(line[0] == 'v' && line[1] == 'n') {
+        else if(token_list.size() > 0 && !token_list[0].compare("vn")) {
             vec3 normal = {
                 std::stod(token_list[1]),
                 std::stod(token_list[2]),
                 std::stod(token_list[3])
             };
-
-            model->normals.push_back(normal);
+            model->components[current_obj].normals.push_back(normal);
         }
-        else if(line[0] == 'f' && line[1] == ' ') {
+        else if(token_list.size() > 0 && !token_list[0].compare("f")) {
             /* We parse the string and pass a face into our vector */
             vec3 face;
             vec3 texture_index;
@@ -81,9 +84,12 @@ void Parser::parse_obj(std::string filename, Model *model) {
             face = {face_vertices[0], face_vertices[1], face_vertices[2]};
             texture_index = {coordinate_indices[0], coordinate_indices[1], coordinate_indices[2]};
 
-            model->faces.push_back(face);
-            model->texture_indices.push_back(texture_index);
+            model->components[current_obj].faces.push_back(face);
+            model->components[current_obj].texture_indices.push_back(texture_index);
 
+        }
+        else if(token_list.size() > 0 && !token_list[0].compare("usemtl")) {
+            model->components[current_obj].mat_name = token_list[1];
         }
     }
 }

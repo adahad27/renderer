@@ -2,6 +2,7 @@
 #define MODEL
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include "vec.h"
 #include "material.hpp"
 
@@ -17,13 +18,7 @@ class Model {
     friend class Parser;
     
     private:
-        
-        std::vector <vec3> vertices;
-        std::vector <vec3> texture_coordinates;
-        std::vector <vec3> normals;
-        std::vector <vec3> texture_indices;
-        std::vector <vec3> faces;
-        
+        std::unordered_map<std::string, Component> components;
     
     public:
 
@@ -42,7 +37,7 @@ class Component {
         std::vector <vec3> normals;
         std::vector <vec3> texture_indices;
         std::vector <vec3> faces;
-        Material* mat;
+        std::string mat_name;
     
 };
 
