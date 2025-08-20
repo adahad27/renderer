@@ -1,15 +1,15 @@
 #include "file.hpp"
 #include <cassert>
 
-void read_png_alloc(std::string filename, FILE* file, png_structp png_ptr, png_infop info_ptr) {
+void read_png_alloc(std::string filename, FILE** file, png_structpp png_ptr, png_infopp info_ptr) {
     // png_bytepp row_pointers;
-    file = fopen(filename.c_str(), "rb");
+    *file = fopen(filename.c_str(), "rb");
     
     
-    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    info_ptr = png_create_info_struct(png_ptr);
-    png_init_io(png_ptr, file);
-    png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+    *png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    *info_ptr = png_create_info_struct(*png_ptr);
+    png_init_io(*png_ptr, *file);
+    png_read_png(*png_ptr, *info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
     
 
 }
@@ -159,9 +159,9 @@ void Parser::parse_mtl(std::string filename, std::unordered_map<std::string, Mat
         else if(!words[0].compare("map_Kd")) {
             materials[current_mtl_name].map_Kd = words[1];
             read_png_alloc(words[1], 
-                materials[current_mtl_name].file, 
-                materials[current_mtl_name].png_ptr, 
-                materials[current_mtl_name].info_ptr);
+                &materials[current_mtl_name].file, 
+                &materials[current_mtl_name].png_ptr, 
+                &materials[current_mtl_name].info_ptr);
         }
         
     }
