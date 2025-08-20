@@ -137,6 +137,10 @@ void Parser::parse_mtl(std::string filename, std::unordered_map<std::string, Mat
         }
         else if(!words[0].compare("map_Kd")) {
             materials[current_mtl_name].map_Kd = words[1];
+            read_png_alloc(words[1], 
+                materials[current_mtl_name].file, 
+                materials[current_mtl_name].png_ptr, 
+                materials[current_mtl_name].info_ptr);
         }
         
     }
@@ -160,10 +164,10 @@ void read_png_free(FILE* file, png_structp png_ptr, png_infop info_ptr) {
     fclose(file);
 }
 
-// vec3 get_pixel(uint32_t x, uint32_t y, png_structp png_ptr, png_infop info_ptr) {
-//     return {
-//         png_get_rows(png_ptr, info_ptr)[x][3*y],
-//         png_get_rows(png_ptr, info_ptr)[x][3*y+1],
-//         png_get_rows(png_ptr, info_ptr)[x][3*y+2]
-//     };
-// }
+vec3 get_pixel(uint32_t x, uint32_t y, png_structp png_ptr, png_infop info_ptr) {
+    return {
+        (double) png_get_rows(png_ptr, info_ptr)[x][3*y],
+        (double) png_get_rows(png_ptr, info_ptr)[x][3*y+1],
+        (double) png_get_rows(png_ptr, info_ptr)[x][3*y+2]
+    };
+}

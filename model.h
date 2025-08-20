@@ -6,6 +6,20 @@
 #include "vec.h"
 #include "material.hpp"
 
+class Component {
+    friend class Renderer;
+    friend class Parser;
+    
+    private:
+        std::vector <vec3> vertices;
+        std::vector <vec3> texture_coordinates;
+        std::vector <vec3> normals;
+        std::vector <vec3> texture_indices;
+        std::vector <vec3> faces;
+        std::string mat_name;
+    
+};
+
 class Model {
     /* 
     Renderer will accept an instance of a Model as an argument to render.
@@ -27,19 +41,6 @@ class Model {
 };
 
 
-class Component {
-    friend class Renderer;
-    friend class Parser;
-    
-    private:
-        std::vector <vec3> vertices;
-        std::vector <vec3> texture_coordinates;
-        std::vector <vec3> normals;
-        std::vector <vec3> texture_indices;
-        std::vector <vec3> faces;
-        std::string mat_name;
-    
-};
 
 
 
