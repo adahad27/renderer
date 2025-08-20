@@ -2,7 +2,7 @@
 #define MAT
 #include "vec.h"
 #include <string>
-// #include "libpng/png.h"
+#include "libpng/png.h"
 
 class Material {
     friend class Parser;
@@ -14,6 +14,9 @@ class Material {
         FILE *file;
         png_structp png_ptr;
         png_infop info_ptr;
+    
+    public:
+        vec3 get_pixel(uint32_t x, uint32_t y);
 
 };
 #endif

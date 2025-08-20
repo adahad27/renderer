@@ -1,5 +1,5 @@
 #include "file.hpp"
-#include "libpng/png.h"
+
 
 void Parser::parse_obj(std::string filename, Model *model) {
     std::fstream model_file;
@@ -162,12 +162,4 @@ void read_png_alloc(std::string filename, FILE* file, png_structp png_ptr, png_i
 void read_png_free(FILE* file, png_structp png_ptr, png_infop info_ptr) {
     png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
     fclose(file);
-}
-
-vec3 get_pixel(uint32_t x, uint32_t y, png_structp png_ptr, png_infop info_ptr) {
-    return {
-        (double) png_get_rows(png_ptr, info_ptr)[x][3*y],
-        (double) png_get_rows(png_ptr, info_ptr)[x][3*y+1],
-        (double) png_get_rows(png_ptr, info_ptr)[x][3*y+2]
-    };
 }

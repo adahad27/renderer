@@ -11,12 +11,12 @@
 
 extern SDL_Renderer *sdl_renderer;
 extern SDL_Window *sdl_window;
+extern std::unordered_map<std::string, Material> materials;
 
 class Renderer {
     private:
         /* Instance variables */
         TGAImage image;
-        TGAImage texture_map;
         
         vec3 camera_position;
         vec3 camera_direction;
@@ -25,7 +25,6 @@ class Renderer {
         double scale;
         
         int image_width, image_height;
-        int texture_width, texture_height;
 
         std::vector <int> z_buffer;
         
@@ -42,7 +41,7 @@ class Renderer {
 
         double calculate_angle(double coordinate_1, double coordinate_2);
 
-        void triangle(triangle_information triangle_info, vec3 texture_index, std::vector <vec3> &texture_coordinates);
+        void triangle(triangle_information triangle_info, vec3 texture_index, std::vector <vec3> &texture_coordinates, std::string &mtl_name);
 
         void modify_vertices(Model &model);
 
@@ -56,7 +55,7 @@ class Renderer {
 
         void load_image(int width, int height);
 
-        void load_texture(std::string filename, int width, int height);
+        // void load_texture(std::string filename, int width, int height);
 
         void wireframe(Model &model, TGAColor color);
 

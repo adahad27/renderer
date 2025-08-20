@@ -14,6 +14,7 @@
 
 SDL_Renderer *sdl_renderer = NULL;
 SDL_Window *sdl_window = NULL;
+std::unordered_map<std::string, Material> materials;
 
 Renderer::Renderer() {
     camera_position = {0, 0, 1};
@@ -34,11 +35,6 @@ void Renderer::load_image(int width, int height) {
 
 }
 
-void Renderer::load_texture(std::string filename, int width, int height) {
-    texture_map = TGAImage(width, height, TGAImage::RGB);
-    texture_map.read_tga_file(filename.c_str());
-    texture_map.flip_vertically();
-}
 
 void Renderer::write(std::string filename) {
     image.flip_vertically();
@@ -154,7 +150,7 @@ void modify_color_intensity(double intensity, TGAColor &color) {
 }
 
 
-void Renderer::triangle(triangle_information triangle_info, vec3 texture_index, std::vector <vec3> &texture_coordinates) {
+void Renderer::triangle(triangle_information triangle_info, vec3 texture_index, std::vector <vec3> &texture_coordinates, std::string &mtl_name) {
     /*
     First we draw the bounding box for the triangle
     */
@@ -228,7 +224,8 @@ so the following for loop can be parallelized.
                 double interpolated_texture_x = 1024 * (alpha*p1_texture_x + beta*p2_texture_x + gamma*p3_texture_x);
                 double interpolated_texture_y = 1024 * (alpha*p1_texture_y + beta*p2_texture_y + gamma*p3_texture_y);
 
-                TGAColor color = texture_map.get((int)interpolated_texture_x, (int)interpolated_texture_y);
+                vec3 texture_color = materials[mtl_name].get_pixel((int)interpolated_texture_x, (int)interpolated_texture_y);
+                TGAColor color = TGAColor((int)texture_color.x, (int)texture_color.y, (int)texture_color.z, 0);
 
                 /* Intensity interpolation using Phong shading */
 
@@ -238,6 +235,7 @@ so the following for loop can be parallelized.
                 double interpolated_reflectiveness = alpha*triangle_info.reflectivities[0] + beta*triangle_info.reflectivities[1] + gamma*triangle_info.reflectivities[2];
                 double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal);
                 diffuse_intensity += calculate_specular_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal);
+
                 modify_color_intensity(diffuse_intensity, color);
 
 
@@ -307,8 +305,14 @@ void Renderer::change_rotation(char axis, double angle, Model &model) {
     for(auto it = model.components.begin(); it != model.components.end(); it = ++it) {
         for(uint32_t i = 0; i < it->second.vertices.size(); ++i) {
             
-            it->second.vertices[i] = matmul(rotation_matrix, it->second.vertices[i]);
-            it->second.normals[i] = matmul(rotation_matrix, it->second.normals[i]);
+            it->second.vertices[i] = matmul(
+                rotation_matrix, 
+                it->second.vertices[i]
+            );
+            it->second.normals[i] = matmul(
+                rotation_matrix, 
+                it->second.normals[i]
+            );
         
         }
     }
@@ -379,7 +383,12 @@ void Renderer::render(Model &model) {
             triangle_info.reflectivities[1] = 1;
             triangle_info.reflectivities[2] = 1;
 
-            triangle(triangle_info, it->second.texture_indices[i], it->second.texture_coordinates);
+            triangle(
+                triangle_info, 
+                it->second.texture_indices[i], 
+                it->second.texture_coordinates, 
+                it->second.mat_name
+            );
 
         }
     }

@@ -14,7 +14,7 @@
 Renderer renderer = Renderer();
 Parser parser = Parser();
 Model model;
-std::unordered_map<std::string, Material> materials;
+
 
 
 //quit
@@ -68,7 +68,6 @@ bool check_scale(std::vector<std::string> &args) {
 void load_model(std::string model_file, std::string texture_file) {
     parser.parse_obj(model_file, &model);
 
-    renderer.load_texture(texture_file.c_str(), WIDTH, HEIGHT);
     renderer.load_image(WIDTH, HEIGHT);
     renderer.light.set_direction({0, 0, 1});
     renderer.render(model);
@@ -120,6 +119,7 @@ void start_IO_loop() {
         }
         if(!input.compare(CMD_QUIT)) {
             std::cout << "Application closed!\n";
+            //TODO: Free resources from libpng here.
             return;
         }
         else if(!args[0].compare(CMD_LOAD)) {
