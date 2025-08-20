@@ -11,9 +11,6 @@ class Component {
     friend class Parser;
     
     private:
-        std::vector <vec3> vertices;
-        std::vector <vec3> texture_coordinates;
-        std::vector <vec3> normals;
         std::vector <vec3> texture_indices;
         std::vector <vec3> faces;
         std::string mat_name;
@@ -32,6 +29,9 @@ class Model {
     friend class Parser;
     
     private:
+        std::vector <vec3> vertices;
+        std::vector <vec3> texture_coordinates;
+        std::vector <vec3> normals;
         std::unordered_map<std::string, Component> components;
     
     public:

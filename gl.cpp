@@ -302,28 +302,16 @@ void Renderer::change_rotation(char axis, double angle, Model &model) {
 
     }
 
-    for(auto it = model.components.begin(); it != model.components.end(); it = ++it) {
-        for(uint32_t i = 0; i < it->second.vertices.size(); ++i) {
-            
-            it->second.vertices[i] = matmul(
-                rotation_matrix, 
-                it->second.vertices[i]
-            );
-            it->second.normals[i] = matmul(
-                rotation_matrix, 
-                it->second.normals[i]
-            );
-        
-        }
+    for(uint32_t i = 0; i < model.vertices.size(); ++i) {
+        model.vertices[i] = matmul(rotation_matrix, model.vertices[i]);
+        model.normals[i] = matmul(rotation_matrix, model.normals[i]);
     }
 }
 
 
 void Renderer::modify_vertices(Model &model) {
-    for(auto it = model.components.begin(); it != model.components.end(); it = ++it) {
-        for(uint32_t i = 0; i < it->second.vertices.size(); ++i) {
-            it->second.vertices[i] = scale * it->second.vertices[i];
-        }
+    for(uint32_t i = 0; i < model.vertices.size(); ++i) {
+        model.vertices[i] = scale * model.vertices[i];
     }
     
 }
@@ -342,9 +330,9 @@ void Renderer::wireframe(Model &model, TGAColor color) {
             vec3 p1, p2, p3;
 
             /* Assign the vertices */
-            p1 = it->second.vertices[it->second.faces[i].x];
-            p2 = it->second.vertices[it->second.faces[i].y];
-            p3 = it->second.vertices[it->second.faces[i].z];
+            p1 = model.vertices[it->second.faces[i].x];
+            p2 = model.vertices[it->second.faces[i].y];
+            p3 = model.vertices[it->second.faces[i].z];
 
             /* Draw a face with the projected vertices on the given image with the given color */
             hollow_triangle(projection_on_screen(p1), 
@@ -370,14 +358,14 @@ void Renderer::render(Model &model) {
         for(uint32_t i = 0; i < it->second.faces.size(); ++i) {
 
             triangle_information triangle_info;
+            
+            triangle_info.vertices[0] = model.vertices[it->second.faces[i].x];
+            triangle_info.vertices[1] = model.vertices[it->second.faces[i].y];
+            triangle_info.vertices[2] = model.vertices[it->second.faces[i].z];
 
-            triangle_info.vertices[0] = it->second.vertices[it->second.faces[i].x];
-            triangle_info.vertices[1] = it->second.vertices[it->second.faces[i].y];
-            triangle_info.vertices[2] = it->second.vertices[it->second.faces[i].z];
-
-            triangle_info.normals[0] = it->second.normals[it->second.faces[i].x];
-            triangle_info.normals[1] = it->second.normals[it->second.faces[i].y];
-            triangle_info.normals[2] = it->second.normals[it->second.faces[i].z];
+            triangle_info.normals[0] = model.normals[it->second.faces[i].x];
+            triangle_info.normals[1] = model.normals[it->second.faces[i].y];
+            triangle_info.normals[2] = model.normals[it->second.faces[i].z];
 
             triangle_info.reflectivities[0] = 1;
             triangle_info.reflectivities[1] = 1;
@@ -386,7 +374,7 @@ void Renderer::render(Model &model) {
             triangle(
                 triangle_info, 
                 it->second.texture_indices[i], 
-                it->second.texture_coordinates, 
+                model.texture_coordinates, 
                 it->second.mat_name
             );
 

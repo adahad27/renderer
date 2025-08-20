@@ -1,5 +1,24 @@
 #include "file.hpp"
+#include <cassert>
 
+void read_png_alloc(std::string filename, FILE* file, png_structp png_ptr, png_infop info_ptr) {
+    // png_bytepp row_pointers;
+    file = fopen(filename.c_str(), "rb");
+    
+    
+    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    info_ptr = png_create_info_struct(png_ptr);
+    png_init_io(png_ptr, file);
+    png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
+    
+
+}
+
+
+void read_png_free(FILE* file, png_structp png_ptr, png_infop info_ptr) {
+    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
+    fclose(file);
+}
 
 void Parser::parse_obj(std::string filename, Model *model) {
     std::fstream model_file;
@@ -7,7 +26,7 @@ void Parser::parse_obj(std::string filename, Model *model) {
     /* Modify path to change which relative folder renderer searches for when
     rendering models. */
     std::string line;
-
+    std::string current_obj;
     model_file.open(filename.c_str());
 
     
@@ -20,13 +39,13 @@ void Parser::parse_obj(std::string filename, Model *model) {
         std::vector<std::string> token_list;
         
         std::string token;
-        std::string current_obj;
+        
 
         while(std::getline(ss, token, ' ')) {
             token_list.push_back(token);
         }
         //load obj/diablo3_pose.obj obj/diablo3_pose_diffuse.tga
-        if(token_list.size() > 0 && !token_list[0].compare("v")) {
+        if(token_list.size() > 0 && !token_list[0].compare("o")) {
             Component object;
             model->components.insert({token_list[1], object});
             current_obj = token_list[1];
@@ -40,8 +59,8 @@ void Parser::parse_obj(std::string filename, Model *model) {
                 std::stod(token_list[2]),
                 std::stod(token_list[3])
             };
-
-            model->components[current_obj].vertices.push_back(vertex);
+            assert(current_obj.compare(""));
+            model->vertices.push_back(vertex);
         }
         else if(token_list.size() > 0 && !token_list[0].compare("vt")) {
             
@@ -50,8 +69,8 @@ void Parser::parse_obj(std::string filename, Model *model) {
                 std::stod(token_list[2]),
                 std::stod(token_list[3])
             };
-
-            model->components[current_obj].texture_coordinates.push_back(texture);
+            assert(current_obj.compare(""));
+            model->texture_coordinates.push_back(texture);
         }
         else if(token_list.size() > 0 && !token_list[0].compare("vn")) {
             vec3 normal = {
@@ -59,7 +78,8 @@ void Parser::parse_obj(std::string filename, Model *model) {
                 std::stod(token_list[2]),
                 std::stod(token_list[3])
             };
-            model->components[current_obj].normals.push_back(normal);
+            assert(current_obj.compare(""));
+            model->normals.push_back(normal);
         }
         else if(token_list.size() > 0 && !token_list[0].compare("f")) {
             /* We parse the string and pass a face into our vector */
@@ -83,12 +103,13 @@ void Parser::parse_obj(std::string filename, Model *model) {
 
             face = {face_vertices[0], face_vertices[1], face_vertices[2]};
             texture_index = {coordinate_indices[0], coordinate_indices[1], coordinate_indices[2]};
-
+            assert(current_obj.compare(""));
             model->components[current_obj].faces.push_back(face);
             model->components[current_obj].texture_indices.push_back(texture_index);
 
         }
         else if(token_list.size() > 0 && !token_list[0].compare("usemtl")) {
+            assert(current_obj.compare(""));
             model->components[current_obj].mat_name = token_list[1];
         }
     }
@@ -146,20 +167,4 @@ void Parser::parse_mtl(std::string filename, std::unordered_map<std::string, Mat
     }
 }
 
-void read_png_alloc(std::string filename, FILE* file, png_structp png_ptr, png_infop info_ptr) {
-    // png_bytepp row_pointers;
-    file = fopen(filename.c_str(), "rb");
-    
-    
-    png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-    info_ptr = png_create_info_struct(png_ptr);
-    png_init_io(png_ptr, file);
-    png_read_png(png_ptr, info_ptr, PNG_TRANSFORM_IDENTITY, NULL);
-    
 
-}
-
-void read_png_free(FILE* file, png_structp png_ptr, png_infop info_ptr) {
-    png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-    fclose(file);
-}

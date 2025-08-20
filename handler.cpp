@@ -67,7 +67,8 @@ bool check_scale(std::vector<std::string> &args) {
 
 void load_model(std::string model_file, std::string texture_file) {
     parser.parse_obj(model_file, &model);
-
+    parser.parse_mtl(texture_file, materials);
+    
     renderer.load_image(WIDTH, HEIGHT);
     renderer.light.set_direction({0, 0, 1});
     renderer.render(model);
