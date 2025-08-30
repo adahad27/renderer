@@ -2,20 +2,7 @@
 #define MODEL
 #include <string>
 #include <vector>
-#include <unordered_map>
 #include "vec.h"
-#include "material.hpp"
-
-class Component {
-    friend class Renderer;
-    friend class Parser;
-    
-    private:
-        std::vector <vec3> texture_indices;
-        std::vector <vec3> faces;
-        std::string mat_name;
-    
-};
 
 class Model {
     /* 
@@ -26,20 +13,27 @@ class Model {
     disturbing the model and forcing a strange rendering.
     */
     friend class Renderer;
-    friend class Parser;
     
     private:
+        
         std::vector <vec3> vertices;
         std::vector <vec3> texture_coordinates;
         std::vector <vec3> normals;
-        std::unordered_map<std::string, Component> components;
+        std::vector <vec3> texture_indices;
+        std::vector <vec3> faces;
+        
+        void parse_obj(std::string filename);
     
     public:
 
         Model();
+        
+        Model(std::string filename);
+        
+        void load_model(std::string filename);
+
 
 };
-
 
 
 

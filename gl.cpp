@@ -14,7 +14,6 @@
 
 SDL_Renderer *sdl_renderer = NULL;
 SDL_Window *sdl_window = NULL;
-std::unordered_map<std::string, Material> materials;
 
 Renderer::Renderer() {
     camera_position = {0, 0, 1};
@@ -35,6 +34,11 @@ void Renderer::load_image(int width, int height) {
 
 }
 
+void Renderer::load_texture(std::string filename, int width, int height) {
+    texture_map = TGAImage(width, height, TGAImage::RGB);
+    texture_map.read_tga_file(filename.c_str());
+    texture_map.flip_vertically();
+}
 
 void Renderer::write(std::string filename) {
     image.flip_vertically();
@@ -150,7 +154,7 @@ void modify_color_intensity(double intensity, TGAColor &color) {
 }
 
 
-void Renderer::triangle(triangle_information triangle_info, vec3 texture_index, std::vector <vec3> &texture_coordinates, std::string &mtl_name) {
+void Renderer::triangle(triangle_information triangle_info, vec3 texture_index, std::vector <vec3> &texture_coordinates) {
     /*
     First we draw the bounding box for the triangle
     */
@@ -224,8 +228,7 @@ so the following for loop can be parallelized.
                 double interpolated_texture_x = 1024 * (alpha*p1_texture_x + beta*p2_texture_x + gamma*p3_texture_x);
                 double interpolated_texture_y = 1024 * (alpha*p1_texture_y + beta*p2_texture_y + gamma*p3_texture_y);
 
-                vec3 texture_color = materials[mtl_name].get_pixel((int)interpolated_texture_x, (int)interpolated_texture_y);
-                TGAColor color = TGAColor((int)texture_color.x, (int)texture_color.y, (int)texture_color.z, 0);
+                TGAColor color = texture_map.get((int)interpolated_texture_x, (int)interpolated_texture_y);
 
                 /* Intensity interpolation using Phong shading */
 
@@ -235,7 +238,6 @@ so the following for loop can be parallelized.
                 double interpolated_reflectiveness = alpha*triangle_info.reflectivities[0] + beta*triangle_info.reflectivities[1] + gamma*triangle_info.reflectivities[2];
                 double diffuse_intensity = calculate_diffuse_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal);
                 diffuse_intensity += calculate_specular_intensity(interpolated_reflectiveness, interpolated_vertex, interpolated_normal);
-
                 modify_color_intensity(diffuse_intensity, color);
 
 
@@ -286,25 +288,33 @@ void Renderer::change_rotation(char axis, double angle, Model &model) {
         rotation_matrix[1] = {0, cos(angle * M_PI / 180), -1*sin(angle * M_PI / 180)};
         rotation_matrix[2] = {0, sin(angle * M_PI / 180), cos(angle * M_PI / 180)};
 
+        for(uint32_t i = 0; i < model.vertices.size(); ++i) {
+
+            model.vertices[i] = matmul(rotation_matrix, model.vertices[i]);
+            model.normals[i] = matmul(rotation_matrix, model.normals[i]);
+        }
     }
     else if(axis == 'y') {
-    
         rotation_matrix[0] = {cos(angle * M_PI / 180), 0, sin(angle * M_PI / 180)};
         rotation_matrix[1] = {0, 1, 0};
         rotation_matrix[2] = {-1*sin(angle * M_PI / 180), 0, cos(angle * M_PI / 180)};
-    
+
+        for(uint32_t i = 0; i < model.vertices.size(); ++i) {
+
+            model.vertices[i] = matmul(rotation_matrix, model.vertices[i]);
+            model.normals[i] = matmul(rotation_matrix, model.normals[i]);
+        }
     }
     else if(axis == 'z') {
-        
         rotation_matrix[0] = {cos(angle * M_PI / 180), -1*sin(angle * M_PI / 180), 0};
         rotation_matrix[1] = {sin(angle * M_PI / 180), cos(angle * M_PI / 180), 0};
         rotation_matrix[2] = {0, 0, 1};
 
-    }
+        for(uint32_t i = 0; i < model.vertices.size(); ++i) {
 
-    for(uint32_t i = 0; i < model.vertices.size(); ++i) {
-        model.vertices[i] = matmul(rotation_matrix, model.vertices[i]);
-        model.normals[i] = matmul(rotation_matrix, model.normals[i]);
+            model.vertices[i] = matmul(rotation_matrix, model.vertices[i]);
+            model.normals[i] = matmul(rotation_matrix, model.normals[i]);
+        }
     }
 }
 
@@ -313,7 +323,6 @@ void Renderer::modify_vertices(Model &model) {
     for(uint32_t i = 0; i < model.vertices.size(); ++i) {
         model.vertices[i] = scale * model.vertices[i];
     }
-    
 }
 
 void Renderer::wireframe(Model &model, TGAColor color) {
@@ -325,23 +334,19 @@ void Renderer::wireframe(Model &model, TGAColor color) {
 
     modify_vertices(model);
 
-    for(auto it = model.components.begin(); it != model.components.end(); it = ++it) {
-        for(uint32_t i = 0; i < it->second.faces.size(); ++i) {
-            vec3 p1, p2, p3;
+    for(uint32_t i = 0; i < model.faces.size(); ++i) {
+        vec3 p1, p2, p3;
 
-            /* Assign the vertices */
-            p1 = model.vertices[it->second.faces[i].x];
-            p2 = model.vertices[it->second.faces[i].y];
-            p3 = model.vertices[it->second.faces[i].z];
+        /* Assign the vertices */
+        p1 = model.vertices[model.faces[i].x];
+        p2 = model.vertices[model.faces[i].y];
+        p3 = model.vertices[model.faces[i].z];
 
-            /* Draw a face with the projected vertices on the given image with the given color */
-            hollow_triangle(projection_on_screen(p1), 
-                            projection_on_screen(p2), 
-                            projection_on_screen(p3), color);
-        }
+        /* Draw a face with the projected vertices on the given image with the given color */
+        hollow_triangle(projection_on_screen(p1), 
+                        projection_on_screen(p2), 
+                        projection_on_screen(p3), color);
     }
-
-    
 
 
 }
@@ -354,31 +359,25 @@ void Renderer::render(Model &model) {
 
     modify_vertices(model);
 
-    for(auto it = model.components.begin(); it != model.components.end(); it = ++it) {
-        for(uint32_t i = 0; i < it->second.faces.size(); ++i) {
+    for(uint32_t i = 0; i < model.faces.size(); ++i) {
+        
+        
 
-            triangle_information triangle_info;
-            
-            triangle_info.vertices[0] = model.vertices[it->second.faces[i].x];
-            triangle_info.vertices[1] = model.vertices[it->second.faces[i].y];
-            triangle_info.vertices[2] = model.vertices[it->second.faces[i].z];
+        triangle_information triangle_info;
 
-            triangle_info.normals[0] = model.normals[it->second.faces[i].x];
-            triangle_info.normals[1] = model.normals[it->second.faces[i].y];
-            triangle_info.normals[2] = model.normals[it->second.faces[i].z];
+        triangle_info.vertices[0] = model.vertices[model.faces[i].x];
+        triangle_info.vertices[1] = model.vertices[model.faces[i].y];
+        triangle_info.vertices[2] = model.vertices[model.faces[i].z];
 
-            triangle_info.reflectivities[0] = 1;
-            triangle_info.reflectivities[1] = 1;
-            triangle_info.reflectivities[2] = 1;
+        triangle_info.normals[0] = model.normals[model.faces[i].x];
+        triangle_info.normals[1] = model.normals[model.faces[i].y];
+        triangle_info.normals[2] = model.normals[model.faces[i].z];
 
-            triangle(
-                triangle_info, 
-                it->second.texture_indices[i], 
-                model.texture_coordinates, 
-                it->second.mat_name
-            );
+        triangle_info.reflectivities[0] = 1;
+        triangle_info.reflectivities[1] = 1;
+        triangle_info.reflectivities[2] = 1;
 
-        }
+        triangle(triangle_info, model.texture_indices[i], model.texture_coordinates);
     }
     SDL_RenderPresent(sdl_renderer);
 }

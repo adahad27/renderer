@@ -1,34 +1,28 @@
-#include "handler.h"
-#include "file.hpp"
+#include "interface.h"
+
 #include "vec.h"
 #include "gl.h"
-#include <stdio.h>
-#include <stdlib.h>
 
 #define CMD_QUIT "quit"
 #define CMD_LOAD "load"
 #define CMD_ROTATE "rotate"
 #define CMD_SCALE "scale"
-#define CMD_MAT "material"
-#define CMD_DBG_READ "read"
+#define PORT 8000
+#define MAX_MSG_LEN 1000
+
 Renderer renderer = Renderer();
-Parser parser = Parser();
 Model model;
-
-
 
 //quit
 bool check_quit(std::vector<std::string> &args) {
     return args.size() == 1 && args[0].compare(CMD_QUIT) == 0;
 }
 
-
 //load <path_to_file>
 bool check_load(std::vector<std::string> &args) {
     //TODO: Add check to see if file exists
     return args.size() == 2 && args[0].compare(CMD_LOAD) == 0;
 }
-
 
 //rotate <axis> <degree>
 bool check_rotate(std::vector<std::string> &args) {
@@ -51,7 +45,6 @@ bool check_rotate(std::vector<std::string> &args) {
     
 }
 
-
 //scale <scale_level>
 bool check_scale(std::vector<std::string> &args) {
     try {
@@ -66,38 +59,25 @@ bool check_scale(std::vector<std::string> &args) {
 
 
 void load_model(std::string model_file, std::string texture_file) {
-    parser.parse_obj(model_file, &model);
-    parser.parse_mtl(texture_file, materials);
-    
+    model.load_model(model_file.c_str());
+
+    renderer.load_texture(texture_file.c_str(), WIDTH, HEIGHT);
     renderer.load_image(WIDTH, HEIGHT);
     renderer.light.set_direction({0, 0, 1});
+    // renderer.change_scale(1000);
     renderer.render(model);
 }
-
-
-void load_materials(std::string material_file) {
-    parser.parse_mtl(material_file, materials);
-}
-
 
 void scale_model(std::string scale) {
     renderer.change_scale(std::stod(scale));
     renderer.render(model);
 }
 
-
 void rotate_model(std::string axis, std::string degree) {
     std::cout << "Changing rotation on " << axis << " axis by " << degree << " degrees\n";
     renderer.change_rotation(axis[0], std::stod(degree), model);
     renderer.render(model);
 }
-
-
-
-void write_png(std::string filename) {
-    
-}
-
 
 void start_IO_loop() {
     
@@ -120,22 +100,16 @@ void start_IO_loop() {
         }
         if(!input.compare(CMD_QUIT)) {
             std::cout << "Application closed!\n";
-            //TODO: Free resources from libpng here.
             return;
         }
         else if(!args[0].compare(CMD_LOAD)) {
             load_model(args[1], args[2]);
-            std::cout << "If you can't see the model, try scaling it up!\n";
         }
         else if(!args[0].compare(CMD_ROTATE)) {
             rotate_model(args[1], args[2]);
         }
         else if(!args[0].compare(CMD_SCALE)) {
             scale_model(args[1]);
-        }
-        else if(!args[0].compare(CMD_MAT)) {
-            load_materials(args[1]);
-            std::cout << "Material file loaded\n";
         }
         else {
             std::cout << "Unrecognized Command\n";
